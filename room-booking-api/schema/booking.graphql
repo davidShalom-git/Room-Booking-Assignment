@@ -1,0 +1,57 @@
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+type Booking {
+  id: ID!
+  resource: Resource!
+  title: String!
+  startTime: DateTime!
+  endTime: DateTime!
+  status: BookingStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type BookingEdge {
+  cursor: String!
+  node: Booking!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type BookingConnection {
+  edges: [BookingEdge!]!
+  pageInfo: PageInfo!
+}
+
+input CreateBookingInput {
+  resourceId: ID!
+  title: String!
+  startTime: DateTime!
+  endTime: DateTime!
+}
+
+input RescheduleBookingInput {
+  startTime: DateTime!
+  endTime: DateTime!
+}
+
+extend type Query {
+  """Cursor-paginated bookings, ordered by startTime ascending. Filter by resource and/or status."""
+  bookings(resourceId: ID, status: BookingStatus, first: Int = 20, after: String): BookingConnection!
+
+  """True if [start, end) has no CONFIRMED booking on this resource that overlaps it."""
+  isAvailable(resourceId: ID!, start: DateTime!, end: DateTime!): Boolean!
+}
+
+extend type Mutation {
+  createBooking(input: CreateBookingInput!): Booking!
+  rescheduleBooking(id: ID!, input: RescheduleBookingInput!): Booking!
+  cancelBooking(id: ID!): Booking!
+  deleteBooking(id: ID!): Boolean!
+}
