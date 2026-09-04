@@ -57,21 +57,21 @@ function BookDatesCard({
   return (
     <div className="mt-1 w-full rounded-lg bg-white/70 p-2.5 text-[12px]">
       <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[10px] uppercase tracking-wide text-[#667781]">Check-in</span>
           <input type="date" value={ci} min={todayISO()} disabled={done}
             onChange={(e) => { setCi(e.target.value); if (nights(e.target.value, co) <= 0) setCo(addDays(e.target.value, 2)); }}
-            className="rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+            className="w-full min-w-0 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
           <input type="time" value={cit} disabled={done} onChange={(e) => setCit(e.target.value)}
-            className="rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+            className="w-full min-w-0 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
         </label>
-        <label className="flex flex-col gap-0.5">
+        <label className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[10px] uppercase tracking-wide text-[#667781]">Check-out</span>
           <input type="date" value={co} min={addDays(ci, 1)} disabled={done}
             onChange={(e) => setCo(e.target.value)}
-            className="rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+            className="w-full min-w-0 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
           <input type="time" value={cot} disabled={done} onChange={(e) => setCot(e.target.value)}
-            className="rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+            className="w-full min-w-0 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
         </label>
       </div>
       <div className="mt-2 flex items-center justify-between">
@@ -110,9 +110,9 @@ function ExtendDatesCard({
       <div className="mt-0.5 flex gap-2">
         <input type="date" value={co} min={addDays(minDate, 1)} disabled={done}
           onChange={(e) => setCo(e.target.value)}
-          className="flex-1 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+          className="w-0 min-w-0 flex-1 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
         <input type="time" value={cot} disabled={done} onChange={(e) => setCot(e.target.value)}
-          className="rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
+          className="w-0 min-w-0 flex-1 rounded-md border border-[#d1d7db] px-1.5 py-1 outline-none" />
       </div>
       <button type="button" disabled={done}
         onClick={() => onSubmit({ checkOut: co, checkOutTime: cot })}
@@ -165,8 +165,8 @@ function Phone({
   const lastId = messages.length ? messages[messages.length - 1].id : -1;
 
   return (
-    <div className="w-full max-w-[380px] rounded-[2.4rem] border border-hairline bg-[#1c1712] p-2.5 shadow-[var(--shadow-lift)]">
-      <div className="overflow-hidden rounded-[2rem] bg-[#e7ded3]">
+    <div className="w-full min-w-0 max-w-[380px] rounded-[2.4rem] border border-hairline bg-[#1c1712] p-2.5 shadow-[var(--shadow-lift)]">
+      <div className="min-w-0 overflow-hidden rounded-[2rem] bg-[#e7ded3]">
         <div className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: accent }}>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 font-display text-sm">
             {title[0]}

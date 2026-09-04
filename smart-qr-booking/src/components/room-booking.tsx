@@ -71,7 +71,7 @@ export function RoomBooking({ room }: { room: Room }) {
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-hairline bg-paper">
               <div className="grid grid-cols-2 divide-x divide-hairline">
-                <label className="flex flex-col gap-1 p-3">
+                <label className="flex min-w-0 flex-col gap-1 p-3">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">
                     Check-in
                   </span>
@@ -84,10 +84,10 @@ export function RoomBooking({ room }: { room: Room }) {
                       setCheckIn(v);
                       if (nights(v, checkOut) <= 0) setCheckOut(addDays(v, 2));
                     }}
-                    className="bg-transparent text-[13px] font-medium text-ink outline-none"
+                    className="w-full min-w-0 bg-transparent text-[13px] font-medium text-ink outline-none"
                   />
                 </label>
-                <label className="flex flex-col gap-1 p-3">
+                <label className="flex min-w-0 flex-col gap-1 p-3">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">
                     Check-out
                   </span>
@@ -96,7 +96,7 @@ export function RoomBooking({ room }: { room: Room }) {
                     value={checkOut}
                     min={addDays(checkIn, 1)}
                     onChange={(e) => setCheckOut(e.target.value)}
-                    className="bg-transparent text-[13px] font-medium text-ink outline-none"
+                    className="w-full min-w-0 bg-transparent text-[13px] font-medium text-ink outline-none"
                   />
                 </label>
               </div>
