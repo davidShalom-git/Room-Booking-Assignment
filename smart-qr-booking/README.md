@@ -1,5 +1,8 @@
 # The Coral Courtyard — Smart QR Booking + WhatsApp Enquiry (demo MVP)
 
+**Live:** https://smart-qr-booking.vercel.app
+
+
 A polished, mobile-first **prototype** for a boutique hotel/hostel client. It shows the
 concept end to end:
 
