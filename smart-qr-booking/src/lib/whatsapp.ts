@@ -1,4 +1,4 @@
-import { config } from "@/config";
+import { config, roomUrl } from "@/config";
 import { formatDate, nights, bookingTotal, formatINR } from "@/lib/pricing";
 import type { Room, Booking } from "@/lib/data";
 
@@ -59,4 +59,20 @@ export function confirmationMessage(b: Booking): string {
 /** wa.me deep link with a pre-filled message. Opens WhatsApp on any device. */
 export function waLink(message: string, number: string = config.whatsappNumber): string {
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
+
+/** Real wa.me link for a specific room — used by the room QR codes. */
+export function waRoomLink(room: Pick<Room, "id" | "name">): string {
+  return waLink(
+    [
+      `Hi! I'm interested in *Room ${room.id} — ${room.name}* at ${config.property.name}.`,
+      `Could you tell me about availability?`,
+      roomUrl(room.id),
+    ].join("\n"),
+  );
+}
+
+/** Where a room's QR code should point, per config.qrTarget. */
+export function qrLink(room: Pick<Room, "id" | "name">): string {
+  return config.qrTarget === "room" ? roomUrl(room.id) : waRoomLink(room);
 }

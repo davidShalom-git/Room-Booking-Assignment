@@ -1,5 +1,6 @@
 import { rooms } from "@/lib/data";
-import { roomUrl, config } from "@/config";
+import { config } from "@/config";
+import { qrLink } from "@/lib/whatsapp";
 import { qrSvg, qrPng } from "@/lib/qr";
 import { QrCard } from "@/components/qr-card";
 import { PrintButton } from "@/components/print-button";
@@ -11,10 +12,11 @@ export default async function AdminQrPage() {
   const cards = await Promise.all(
     rooms.map(async (room) => ({
       room,
-      svg: await qrSvg(roomUrl(room.id)),
-      png: await qrPng(roomUrl(room.id)),
+      svg: await qrSvg(qrLink(room)),
+      png: await qrPng(qrLink(room)),
     })),
   );
+  const toWhatsapp = config.qrTarget === "whatsapp";
 
   return (
     <div>
@@ -22,21 +24,38 @@ export default async function AdminQrPage() {
         <div>
           <h1 className="font-display text-3xl text-ink">Room QR codes</h1>
           <p className="mt-1 max-w-lg text-[13px] text-muted">
-            One code per room, each pointing at its live page. Download individually or
-            print the whole sheet for the doors.
+            One code per room. {toWhatsapp
+              ? "A scan opens WhatsApp with that room's enquiry, sent to the front-desk number."
+              : "A scan opens that room's page."}{" "}
+            Download individually or print the whole sheet for the doors.
           </p>
         </div>
         <PrintButton />
       </header>
 
-      <div className="mt-5 flex items-center gap-2 rounded-2xl border border-hairline bg-sand/40 px-4 py-3 text-[12.5px] text-muted print:hidden">
-        <Icon.scan width={16} height={16} className="shrink-0 text-clay" />
-        Codes resolve to{" "}
-        <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">
-          {config.baseUrl.replace(/^https?:\/\//, "")}/rooms/&lt;room&gt;
-        </code>
-        . Set <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">NEXT_PUBLIC_BASE_URL</code>{" "}
-        to your domain before printing.
+      <div className="mt-5 flex flex-wrap items-center gap-1.5 rounded-2xl border border-hairline bg-sand/40 px-4 py-3 text-[12.5px] text-muted print:hidden">
+        {toWhatsapp ? (
+          <>
+            <Icon.whatsapp width={16} height={16} className="shrink-0 text-clay" />
+            Codes open{" "}
+            <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">
+              wa.me/{config.whatsappNumber}
+            </code>{" "}
+            with the room pre-filled. Change the number or switch to web links in{" "}
+            <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">src/config.ts</code>.
+          </>
+        ) : (
+          <>
+            <Icon.scan width={16} height={16} className="shrink-0 text-clay" />
+            Codes resolve to{" "}
+            <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">
+              {config.baseUrl.replace(/^https?:\/\//, "")}/rooms/&lt;room&gt;
+            </code>
+            . Set{" "}
+            <code className="rounded bg-paper px-1.5 py-0.5 text-[12px] text-ink">NEXT_PUBLIC_BASE_URL</code>{" "}
+            before printing.
+          </>
+        )}
       </div>
 
       <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

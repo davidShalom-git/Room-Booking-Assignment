@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rooms, getRoom } from "@/lib/data";
-import { config, roomUrl } from "@/config";
+import { config } from "@/config";
 import { formatINR } from "@/lib/pricing";
+import { qrLink } from "@/lib/whatsapp";
 import { qrSvg } from "@/lib/qr";
 import { Icon, amenityIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/status-badge";
@@ -38,7 +39,7 @@ export default async function RoomPage({
   const room = getRoom(roomId);
   if (!room) notFound();
 
-  const svg = await qrSvg(roomUrl(room.id));
+  const svg = await qrSvg(qrLink(room));
   const others = rooms.filter((r) => r.id !== room.id).slice(0, 3);
 
   const facts = [
@@ -148,8 +149,8 @@ export default async function RoomPage({
                   />
                 </div>
                 <p className="mt-4 text-[13px] text-muted">
-                  Print it, stick it on the door of Room {room.id}. A guest scan lands
-                  right back on this page.
+                  Print it, stick it on the door of Room {room.id}. A guest scan opens
+                  WhatsApp with this room&apos;s enquiry ready to send.
                 </p>
                 <Link
                   href="/qr"

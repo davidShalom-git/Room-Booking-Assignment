@@ -44,8 +44,13 @@ vercel --prod     # production deploy
 Everything client-specific lives in **[`src/config.ts`](src/config.ts)**:
 
 - property name, tagline, city, address, rating, contact, check-in/out times
-- `whatsappNumber` — international format, digits only (used for `wa.me` links)
-- `baseUrl` — falls back to `NEXT_PUBLIC_BASE_URL`
+- `whatsappNumber` — real business number, digits only, international format
+  (currently `917539943015`). Every `wa.me` link and the room QR codes use it.
+- `qrTarget` — `"whatsapp"` (default): a room QR scan opens WhatsApp with that
+  room's enquiry pre-filled, addressed to `whatsappNumber`. `"room"`: the QR
+  opens the room's web page instead.
+- `baseUrl` — falls back to `NEXT_PUBLIC_BASE_URL`; used for links inside the
+  pre-filled WhatsApp message.
 
 Rooms, mock bookings and dashboard numbers are in
 **[`src/lib/data.ts`](src/lib/data.ts)**. Room photos are curated Unsplash URLs.

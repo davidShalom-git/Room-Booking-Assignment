@@ -13,17 +13,17 @@ const STEPS = [
   {
     icon: "scan" as const,
     title: "Scan the room QR",
-    body: "Every door has its own code. A guest points their camera and lands straight on that room's page — no app, no reception queue.",
-  },
-  {
-    icon: "bed" as const,
-    title: "See the room & dates",
-    body: "Photos, amenities, honest pricing and a live availability check. They pick check-in, check-out and party size.",
+    body: "Every door has its own code. A guest points their camera — no app, no reception queue.",
   },
   {
     icon: "whatsapp" as const,
-    title: "Book or ask on WhatsApp",
-    body: "Confirm instantly, or open WhatsApp with the room and dates already written out. The enquiry reaches you in one tap.",
+    title: "WhatsApp opens on that room",
+    body: "Their WhatsApp opens with a message about that exact room, addressed to the front desk. One tap to send.",
+  },
+  {
+    icon: "bed" as const,
+    title: "Ask, book, or extend — all in chat",
+    body: "Questions, a full booking with dates and guests, and later the extend-or-check-out flow. The website is there too, if they'd rather browse.",
   },
 ];
 

@@ -11,7 +11,7 @@ export const config = {
     rating: 4.8,
     reviews: 214,
     email: "stay@coralcourtyard.example",
-    phone: "+91 98470 00000",
+    phone: "+91 75399 43015",
     checkIn: "1:00 PM",
     checkOut: "11:00 AM",
     // Property-level amenities shown on the home page.
@@ -27,9 +27,16 @@ export const config = {
 
   /**
    * WhatsApp business number in international format, digits only (no +, spaces or dashes).
-   * Used to build wa.me links. Replace with the client's real number.
+   * Used to build real wa.me links (open WhatsApp with a pre-filled message).
    */
-  whatsappNumber: "919847000000",
+  whatsappNumber: "917539943015",
+
+  /**
+   * What the room QR codes point at:
+   *   "whatsapp" — scan opens WhatsApp with a pre-filled enquiry for that room (real)
+   *   "room"     — scan opens the room page on the website
+   */
+  qrTarget: "whatsapp" as "whatsapp" | "room",
 
   /**
    * Public base URL the QR codes point at. In production set NEXT_PUBLIC_BASE_URL

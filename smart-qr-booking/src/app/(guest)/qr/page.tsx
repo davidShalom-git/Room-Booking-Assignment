@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { rooms } from "@/lib/data";
-import { roomUrl, config } from "@/config";
+import { config } from "@/config";
+import { qrLink } from "@/lib/whatsapp";
 import { qrSvg, qrPng } from "@/lib/qr";
 import { QrCard } from "@/components/qr-card";
 import { Eyebrow } from "@/components/section-heading";
@@ -9,17 +10,18 @@ import { Icon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Smart QR demo",
-  description: "Every room has its own QR code that opens its live booking page.",
+  description: "Every room has its own QR code — a scan opens WhatsApp with that room's enquiry.",
 };
 
 export default async function QrPage() {
   const cards = await Promise.all(
     rooms.map(async (room) => ({
       room,
-      svg: await qrSvg(roomUrl(room.id)),
-      png: await qrPng(roomUrl(room.id)),
+      svg: await qrSvg(qrLink(room)),
+      png: await qrPng(qrLink(room)),
     })),
   );
+  const toWhatsapp = config.qrTarget === "whatsapp";
 
   return (
     <div className="px-4 pt-28">
@@ -29,21 +31,41 @@ export default async function QrPage() {
           One code per door
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-          These are real, working QR codes. Point your phone at any of them — it opens
-          that room's page on this site, ready to book or enquire. In production they'd
-          be printed as small table cards or door stickers.
+          {toWhatsapp ? (
+            <>
+              These are real, working QR codes. Point your phone at one — your WhatsApp
+              opens with a message about that exact room, addressed to the property.
+              Hit send and it lands on the front-desk phone. Printed as small table
+              cards or door stickers.
+            </>
+          ) : (
+            <>
+              These are real, working QR codes. A scan opens that room&apos;s page on
+              this site, ready to book or enquire.
+            </>
+          )}
         </p>
 
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-muted">
           <span className="flex items-center gap-1.5">
-            <Icon.scan width={15} height={15} className="text-clay" /> Scans open{" "}
-            <code className="rounded bg-sand px-1.5 py-0.5 text-[12px] text-ink">
-              {config.baseUrl.replace(/^https?:\/\//, "")}/rooms/…
-            </code>
+            {toWhatsapp ? (
+              <>
+                <Icon.whatsapp width={15} height={15} className="text-clay" /> Scans open{" "}
+                <code className="rounded bg-sand px-1.5 py-0.5 text-[12px] text-ink">
+                  wa.me/{config.whatsappNumber}
+                </code>
+              </>
+            ) : (
+              <>
+                <Icon.scan width={15} height={15} className="text-clay" /> Scans open{" "}
+                <code className="rounded bg-sand px-1.5 py-0.5 text-[12px] text-ink">
+                  {config.baseUrl.replace(/^https?:\/\//, "")}/rooms/…
+                </code>
+              </>
+            )}
           </span>
           <span className="flex items-center gap-1.5">
-            <Icon.download width={15} height={15} className="text-clay" /> Download each as
-            PNG
+            <Icon.download width={15} height={15} className="text-clay" /> Download each as PNG
           </span>
         </div>
 

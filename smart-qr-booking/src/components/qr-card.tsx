@@ -1,12 +1,13 @@
-import Link from "next/link";
 import type { Room } from "@/lib/data";
-import { roomUrl } from "@/config";
+import { config } from "@/config";
+import { qrLink } from "@/lib/whatsapp";
 import { formatINR } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
 
 /**
- * One room's QR. `svg` and `png` are generated server-side (see lib/qr.ts).
- * The QR encodes the live room URL, so scanning it opens /rooms/<id>.
+ * One room's QR. `svg` and `png` are generated server-side (see lib/qr.ts) from
+ * qrLink(room). With config.qrTarget = "whatsapp" (default) a scan opens
+ * WhatsApp with a pre-filled enquiry for that room; "room" opens the web page.
  */
 export function QrCard({
   room,
@@ -19,6 +20,9 @@ export function QrCard({
   png: string;
   compact?: boolean;
 }) {
+  const toWhatsapp = config.qrTarget === "whatsapp";
+  const target = qrLink(room);
+
   return (
     <div className="flex flex-col rounded-[1.75rem] border border-hairline bg-paper p-1.5">
       <div className="flex flex-col items-center rounded-[1.4rem] bg-sand/60 px-6 py-7 text-center">
@@ -35,22 +39,25 @@ export function QrCard({
             {formatINR(room.pricePerNight)}/night · sleeps {room.capacity}
           </p>
         )}
-        <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-faint">
-          Scan to view this room &amp; book
+        <p className="mt-3 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-faint">
+          {toWhatsapp && <Icon.whatsapp width={12} height={12} />}
+          {toWhatsapp ? "Scan to chat on WhatsApp" : "Scan to view this room & book"}
         </p>
       </div>
 
       <div className="flex items-center gap-2 px-3 py-3">
-        <Link
-          href={`/rooms/${room.id}`}
+        <a
+          href={target}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-hairline px-3 py-2 text-[12px] font-medium text-ink transition-colors hover:bg-ink/[0.03]"
         >
           <Icon.arrowUpRight width={13} height={13} />
-          Open link
-        </Link>
+          {toWhatsapp ? "Open chat" : "Open link"}
+        </a>
         <a
           href={png}
-          download={`${room.id}-coral-courtyard-qr.png`}
+          download={`${room.id}-${config.property.name.toLowerCase().replace(/\s+/g, "-")}-qr.png`}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-ink px-3 py-2 text-[12px] font-medium text-cream transition-transform hover:scale-[1.02]"
         >
           <Icon.download width={13} height={13} />
@@ -59,7 +66,7 @@ export function QrCard({
       </div>
 
       <p className="truncate px-4 pb-3 text-center text-[10px] text-faint">
-        {roomUrl(room.id)}
+        {toWhatsapp ? `wa.me/${config.whatsappNumber} · Room ${room.id}` : target}
       </p>
     </div>
   );
