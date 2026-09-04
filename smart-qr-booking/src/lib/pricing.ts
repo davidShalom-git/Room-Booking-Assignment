@@ -31,6 +31,21 @@ export function formatDate(iso: string): string {
   return `${Number(dd)} ${month} ${y}`;
 }
 
+/** "13:00" -> "1:00 PM". */
+export function formatTime(hhmm: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm);
+  if (!m) return hhmm;
+  let h = Number(m[1]);
+  const ap = h < 12 ? "AM" : "PM";
+  h = h % 12 || 12;
+  return `${h}:${m[2]} ${ap}`;
+}
+
+/** "10 Sep 2026, 1:00 PM". */
+export function formatDateTime(iso: string, hhmm: string): string {
+  return `${formatDate(iso)}, ${formatTime(hhmm)}`;
+}
+
 /**
  * Booking id: HTL-YYYYMMDD-NNN where YYYYMMDD is the check-in date and NNN is a
  * per-day sequence. For the demo the sequence is derived from a count.

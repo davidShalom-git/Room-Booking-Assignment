@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Room } from "@/lib/data";
 import { nights, bookingTotal, formatINR, formatDate, todayISO, addDays } from "@/lib/pricing";
 import { config } from "@/config";
-import { waLink, enquiryMessage } from "@/lib/whatsapp";
 import { Icon } from "@/components/icons";
 
 export function RoomBooking({ room }: { room: Room }) {
@@ -24,15 +24,6 @@ export function RoomBooking({ room }: { room: Room }) {
     const q = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
     router.push(`/rooms/${room.id}/book?${q.toString()}`);
   };
-
-  const wa = waLink(
-    enquiryMessage({
-      room: { id: room.id, name: room.name, pricePerNight: room.pricePerNight },
-      checkIn,
-      checkOut,
-      guests,
-    }),
-  );
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
@@ -174,15 +165,13 @@ export function RoomBooking({ room }: { room: Room }) {
                 <Icon.arrowRight width={15} height={15} />
               </span>
             </button>
-            <a
-              href={wa}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={`/whatsapp?room=${room.id}`}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#1f8a4c]/30 py-2.5 text-sm font-medium text-[#1a7a42] transition-colors hover:bg-[#1f8a4c]/[0.06]"
             >
               <Icon.whatsapp width={15} height={15} />
-              Ask on WhatsApp
-            </a>
+              Continue on WhatsApp
+            </Link>
             <p className="mt-3 text-center text-[11px] text-faint">
               No card needed · pay {formatINR(total)} at the property · free cancellation 48h
             </p>

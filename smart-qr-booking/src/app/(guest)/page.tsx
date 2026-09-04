@@ -7,7 +7,6 @@ import { Reveal } from "@/components/reveal";
 import { CtaButton } from "@/components/cta-button";
 import { RoomCard } from "@/components/room-card";
 import { SectionHeading, Eyebrow } from "@/components/section-heading";
-import { waLink, enquiryMessage } from "@/lib/whatsapp";
 import { formatINR } from "@/lib/pricing";
 
 const STEPS = [
@@ -70,12 +69,7 @@ export default function HomePage() {
                     <CtaButton href="/rooms" icon="arrowRight">
                       Explore rooms
                     </CtaButton>
-                    <CtaButton
-                      href={waLink(enquiryMessage({}))}
-                      external
-                      variant="whatsapp"
-                      icon="whatsapp"
-                    >
+                    <CtaButton href="/whatsapp" variant="whatsapp" icon="whatsapp">
                       Chat on WhatsApp
                     </CtaButton>
                   </div>
