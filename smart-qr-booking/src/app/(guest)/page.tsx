@@ -38,7 +38,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-hairline bg-sand p-1.5">
             <div className="relative overflow-hidden rounded-[2.1rem]">
-              <div className="relative h-[70vh] min-h-[480px] w-full">
+              <div className="relative h-[70vh] min-h-[480px] w-full bg-[#1c1509]">
                 <Image
                   src={PROPERTY_IMAGES.hero}
                   alt={config.property.name}
@@ -183,8 +183,8 @@ export default function HomePage() {
       <section className="px-4 py-20">
         <div className="mx-auto max-w-6xl">
           <div className="overflow-hidden rounded-[2.25rem] border border-hairline bg-[#0f2f1f] p-1.5">
-            <div className="grid items-center gap-8 rounded-[1.9rem] bg-[radial-gradient(120%_140%_at_0%_0%,#1a4a30,#0f2f1f)] p-8 sm:p-12 md:grid-cols-2">
-              <div>
+            <div className="grid min-w-0 grid-cols-1 items-center gap-8 rounded-[1.9rem] bg-[radial-gradient(120%_140%_at_0%_0%,#1a4a30,#0f2f1f)] p-8 sm:p-12 md:grid-cols-2">
+              <div className="min-w-0">
                 <Eyebrow>WhatsApp enquiry</Eyebrow>
                 <h2 className="font-display mt-4 text-3xl leading-tight text-white sm:text-4xl">
                   Your guests already live on WhatsApp
@@ -203,20 +203,28 @@ export default function HomePage() {
                   </CtaButton>
                 </div>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5">
-                <div className="space-y-2.5 text-[13px]">
-                  <p className="ml-auto w-max max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
-                    Is Room 101 free 10–12 Sep for 2?
-                  </p>
-                  <p className="w-max max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
-                    Yes — Deluxe Double, 2 nights × ₹1,800 = ₹3,600. Shall I hold it?
-                  </p>
-                  <p className="ml-auto w-max max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
-                    Yes please, under David
-                  </p>
-                  <p className="w-max max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
-                    Booked ✅ HTL-20260910-001 · you'll get the details here.
-                  </p>
+              <div className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5">
+                <div className="flex min-w-0 flex-col gap-2.5 text-[13px]">
+                  <div className="flex justify-end">
+                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
+                      Is Room 101 free 10–12 Sep for 2?
+                    </p>
+                  </div>
+                  <div className="flex justify-start">
+                    <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
+                      Yes — Deluxe Double, 2 nights × ₹1,800 = ₹3,600. Shall I hold it?
+                    </p>
+                  </div>
+                  <div className="flex justify-end">
+                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
+                      Yes please, under David
+                    </p>
+                  </div>
+                  <div className="flex justify-start">
+                    <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
+                      Booked ✅ HTL-20260910-001 · you&apos;ll get the details here.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

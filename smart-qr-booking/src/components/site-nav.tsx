@@ -127,7 +127,7 @@ export function SiteNav() {
             href={waLink(enquiryMessage({}))}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-flex w-max items-center gap-2 rounded-full bg-[#1f8a4c] px-5 py-3 text-sm font-medium text-white transition-all duration-500"
+            className="mt-6 inline-flex w-fit max-w-full items-center gap-2 rounded-full bg-[#1f8a4c] px-5 py-3 text-sm font-medium text-white transition-all duration-500"
             style={{
               transitionDelay: open ? `${80 + LINKS.length * 55}ms` : "0ms",
               opacity: open ? 1 : 0,

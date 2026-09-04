@@ -181,7 +181,7 @@ function Phone({
           style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(60,45,30,0.05) 1px, transparent 0)", backgroundSize: "18px 18px" }}>
           {messages.map((m) =>
             m.from === "system" ? (
-              <p key={m.id} className="mx-auto my-1 w-max max-w-[92%] rounded-lg bg-[#fcf4cd] px-2.5 py-1 text-center text-[10.5px] leading-snug text-[#5b5744] shadow-sm">
+              <p key={m.id} className="mx-auto my-1 w-fit max-w-[92%] rounded-lg bg-[#fcf4cd] px-2.5 py-1 text-center text-[10.5px] leading-snug text-[#5b5744] shadow-sm">
                 {m.text}
               </p>
             ) : (
