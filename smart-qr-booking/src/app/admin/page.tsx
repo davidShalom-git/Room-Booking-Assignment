@@ -106,6 +106,11 @@ export default function AdminDashboard() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right text-ink">
                         {formatINR(b.total)}
+                        {b.advancePaid !== undefined && (
+                          <span className="block text-[10px] font-normal text-sage">
+                            Due {formatINR(b.balanceDue ?? 0)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-2.5">
                         <StatusBadge status={b.status} />

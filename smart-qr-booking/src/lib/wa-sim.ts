@@ -54,10 +54,14 @@ export type Stage =
   | "review"
   | "staying"
   | "ext_need_dates"
+  | "awaiting_payment"
   | "ext_pending_owner"
   | "owner_choosing_room"
   | "guest_choosing_move"
   | "ended";
+
+/** Advance collected up front. Demo: simulated "pay" button, no real gateway. */
+export const ADVANCE_RATE = 0.5;
 
 export type SimBooking = {
   id: string;
@@ -72,6 +76,8 @@ export type SimBooking = {
   checkOutTime: string;
   nights: number;
   total: number;
+  advance: number;
+  balanceDue: number;
   moveRoomId?: string;
   moveOn?: string;
 };
@@ -91,6 +97,7 @@ export type SimState = {
     checkOutTime?: string;
     extendTo?: string;
     extendToTime?: string;
+    advance?: number;
   };
   booking?: SimBooking;
   /** A later reservation on the same room — makes the extend conflict real. */
@@ -228,7 +235,7 @@ export function reduce(prev: SimState, ev: SimEvent): SimState {
         `Check-out: ${formatDateTime(ev.checkOut, ev.checkOutTime)}`,
         `Duration: ${n} night${n > 1 ? "s" : ""}`,
         `Guests: ${ev.guests}`,
-        `Total: ${formatINR(total)} — pay at the property`,
+        `Total: ${formatINR(total)}`,
       ].join("\n"),
       { actions: [{ label: "Confirm booking", event: "confirm", kind: "primary" }, { label: "Change", event: "change_dates" }] },
     );
@@ -281,6 +288,9 @@ function guestText(s: SimState, t: string, r: Room): SimState {
     return s;
   }
   if (s.stage === "review" && /\b(confirm|yes|book it|go ahead)\b/.test(t)) {
+    return requestAdvance(s, r);
+  }
+  if (s.stage === "awaiting_payment" && /\b(pay|paid|done|sent)\b/.test(t)) {
     return confirmBooking(s, r);
   }
   if (s.stage === "review" && /\b(change|edit|different)\b/.test(t)) {
@@ -352,10 +362,41 @@ function startBooking(s: SimState, r: Room): SimState {
   return s;
 }
 
+/** Show the advance due before the booking is actually confirmed. */
+function requestAdvance(s: SimState, r: Room): SimState {
+  const d = s.draft;
+  const n = nights(d.checkIn!, d.checkOut!);
+  const total = bookingTotal(r.pricePerNight, n);
+  const advance = Math.round(total * ADVANCE_RATE);
+  s.draft.advance = advance;
+  push(
+    s,
+    "guest",
+    "them",
+    [
+      `Almost there — Room ${r.id} is held with a ${Math.round(ADVANCE_RATE * 100)}% advance, balance at check-in.`,
+      ``,
+      `Total: ${formatINR(total)}`,
+      `Advance now: ${formatINR(advance)}`,
+      `Balance at check-in: ${formatINR(total - advance)}`,
+    ].join("\n"),
+    {
+      actions: [
+        { label: `Pay ${formatINR(advance)} advance`, event: "pay_advance", kind: "primary" },
+        { label: "Change dates", event: "change_dates" },
+      ],
+    },
+  );
+  s.stage = "awaiting_payment";
+  return s;
+}
+
 function confirmBooking(s: SimState, r: Room): SimState {
   const d = s.draft;
   const n = nights(d.checkIn!, d.checkOut!);
   const total = bookingTotal(r.pricePerNight, n);
+  const advance = d.advance ?? Math.round(total * ADVANCE_RATE);
+  const balance = total - advance;
   const id = `HTL-${d.checkIn!.replaceAll("-", "")}-${String(100 + (s.seq % 800)).padStart(3, "0")}`;
   s.booking = {
     id,
@@ -370,13 +411,18 @@ function confirmBooking(s: SimState, r: Room): SimState {
     checkOutTime: d.checkOutTime!,
     nights: n,
     total,
+    advance,
+    balanceDue: balance,
   };
+  push(s, "guest", "me", "Pay advance");
+  push(s, "guest", "them", "Redirecting to secure payment (demo)…");
   push(
     s,
     "guest",
     "them",
     [
-      `✅ *Booking confirmed* — ${config.property.name}`,
+      `✅ *Advance received* — ${formatINR(advance)}`,
+      `*Booking confirmed* — ${config.property.name}`,
       ``,
       `Booking ID: ${id}`,
       `Room: ${r.name} — ${r.id}`,
@@ -385,7 +431,7 @@ function confirmBooking(s: SimState, r: Room): SimState {
       `Check-out: ${formatDateTime(d.checkOut!, d.checkOutTime!)}`,
       `Duration: ${n} night${n > 1 ? "s" : ""}`,
       `Guests: ${d.guests}`,
-      `Total: ${formatINR(total)} — pay at the property`,
+      `Total: ${formatINR(total)}  ·  Paid: ${formatINR(advance)}  ·  Due at check-in: ${formatINR(balance)}`,
       ``,
       `${config.property.address}. See you soon! 🌴`,
     ].join("\n"),
@@ -395,14 +441,14 @@ function confirmBooking(s: SimState, r: Room): SimState {
     "owner",
     "them",
     [
-      `🆕 *New booking* via WhatsApp`,
+      `🆕 *New booking* via WhatsApp — advance paid ✅`,
       ``,
       `${r.name} — Room ${r.id}`,
       `Guest: ${d.name}  ·  ${d.phone}`,
       `In:  ${formatDateTime(d.checkIn!, d.checkInTime!)}`,
       `Out: ${formatDateTime(d.checkOut!, d.checkOutTime!)}`,
       `${n} night${n > 1 ? "s" : ""}  ·  ${d.guests} guest${d.guests! > 1 ? "s" : ""}`,
-      `Total: ${formatINR(total)} (pay at property)`,
+      `Total: ${formatINR(total)}  ·  Advance paid: ${formatINR(advance)}  ·  Due at check-in: ${formatINR(balance)}`,
       `Ref: ${id}`,
     ].join("\n"),
     { actions: [{ label: "Acknowledge", event: "ack_booking", kind: "primary" }] },
@@ -482,7 +528,8 @@ function action(s: SimState, id: string, r: Room): SimState {
     push(s, "guest", "them", "The property has your booking. Anything else?");
     return s;
   }
-  if (id === "confirm") return confirmBooking(s, r);
+  if (id === "confirm") return requestAdvance(s, r);
+  if (id === "pay_advance") return confirmBooking(s, r);
   if (id === "change_dates") {
     push(s, "guest", "them", "Pick again:", { card: "book-dates" });
     s.stage = "need_dates";
@@ -720,9 +767,13 @@ if (process.argv[1]?.endsWith("wa-sim.ts")) {
   });
   assert(s.stage === "review" && /₹3,600/.test(lastGuest(s)), "dates -> review w/ ₹3,600");
   s = reduce(s, { type: "action", id: "confirm" });
-  assert(s.stage === "staying" && !!s.booking, "confirmed -> staying");
+  assert(s.stage === "awaiting_payment" && /Advance now: ₹1,800/.test(lastGuest(s)), "confirm -> 50% advance requested");
+  s = reduce(s, { type: "action", id: "pay_advance" });
+  assert(s.stage === "staying" && !!s.booking, "advance paid -> staying");
+  assert(s.booking!.advance === 1800 && s.booking!.balanceDue === 1800, "booking records advance + balance");
   assert(/New booking/.test(lastOwner(s)) && /\+91 98470 33321/.test(lastOwner(s)), "owner got booking w/ phone");
   assert(/David Thomas/.test(s.ownerThread.map((m) => m.text).join("\n")), "owner has name");
+  assert(/Advance paid: ₹1,800/.test(lastOwner(s)) && /Due at check-in: ₹1,800/.test(lastOwner(s)), "owner sees advance + balance");
 
   // last-day reminder
   s = reduce(s, { type: "director", cmd: "lastday" });
@@ -750,6 +801,7 @@ if (process.argv[1]?.endsWith("wa-sim.ts")) {
   s2 = reduce(s2, { type: "guest_text", text: "2" });
   s2 = reduce(s2, { type: "book_dates", checkIn: "2026-10-01", checkInTime: "14:00", checkOut: "2026-10-03", checkOutTime: "11:00", guests: 2 });
   s2 = reduce(s2, { type: "action", id: "confirm" });
+  s2 = reduce(s2, { type: "action", id: "pay_advance" });
   s2 = reduce(s2, { type: "director", cmd: "lastday" });
   s2 = reduce(s2, { type: "action", id: "want_extend" });
   s2 = reduce(s2, { type: "extend_dates", checkOut: "2026-10-05", checkOutTime: "11:00" });
@@ -765,9 +817,22 @@ if (process.argv[1]?.endsWith("wa-sim.ts")) {
   s3 = reduce(s3, { type: "guest_text", text: "2" });
   s3 = reduce(s3, { type: "book_dates", checkIn: "2026-10-01", checkInTime: "13:00", checkOut: "2026-10-04", checkOutTime: "11:00", guests: 2 });
   s3 = reduce(s3, { type: "action", id: "confirm" });
+  s3 = reduce(s3, { type: "action", id: "pay_advance" });
   s3 = reduce(s3, { type: "director", cmd: "lastday" });
   s3 = reduce(s3, { type: "action", id: "want_checkout" });
   assert(s3.stage === "ended" && /check-out/i.test(lastOwner(s3)), "checkout -> owner notified, ended");
+
+  // paying by typing "paid" instead of tapping the button
+  let s4 = initialState("104");
+  s4 = reduce(s4, { type: "guest_text", text: "book room 104" });
+  s4 = reduce(s4, { type: "guest_text", text: "Zoe" });
+  s4 = reduce(s4, { type: "guest_text", text: "9222222222" });
+  s4 = reduce(s4, { type: "guest_text", text: "2" });
+  s4 = reduce(s4, { type: "book_dates", checkIn: "2026-11-01", checkInTime: "13:00", checkOut: "2026-11-02", checkOutTime: "11:00", guests: 2 });
+  s4 = reduce(s4, { type: "guest_text", text: "confirm" });
+  assert(s4.stage === "awaiting_payment", "typed confirm -> advance requested");
+  s4 = reduce(s4, { type: "guest_text", text: "paid" });
+  assert(s4.stage === "staying" && !!s4.booking, "typed 'paid' -> booking confirmed");
 
   console.log("\nall wa-sim checks passed");
 }

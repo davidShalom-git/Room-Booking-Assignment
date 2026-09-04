@@ -9,6 +9,7 @@ import {
   type Action,
 } from "@/lib/wa-sim";
 import { getRoom } from "@/lib/data";
+import { saveBooking, updateBooking } from "@/lib/bookings-store";
 import { config } from "@/config";
 import { todayISO, addDays, nights } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
@@ -273,6 +274,50 @@ export function WaConversation({ roomId = "101" }: { roomId?: string }) {
   const [submitted, setSubmitted] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<"guest" | "owner">("guest");
   const [ownerUnseen, setOwnerUnseen] = useState(0);
+
+  // mirror the confirmed booking into the shared admin store, keep it in
+  // sync as the guest extends / moves rooms
+  const savedRef = useRef<{ id: string; checkOut: string; total: number } | null>(null);
+  useEffect(() => {
+    const b = state.booking;
+    if (!b) {
+      savedRef.current = null;
+      return;
+    }
+    if (!savedRef.current || savedRef.current.id !== b.id) {
+      saveBooking(
+        {
+          guestName: b.guestName,
+          guestPhone: b.guestPhone,
+          roomId: b.moveRoomId ?? b.roomId,
+          roomName: b.moveRoomId ? (getRoom(b.moveRoomId)?.name ?? b.roomName) : b.roomName,
+          checkIn: b.checkIn,
+          checkOut: b.checkOut,
+          guests: b.guests,
+          nights: b.nights,
+          ratePerNight: room.pricePerNight,
+          total: b.total,
+          source: "whatsapp",
+          advancePaid: b.advance,
+          balanceDue: b.balanceDue,
+        },
+        b.id,
+      );
+      savedRef.current = { id: b.id, checkOut: b.checkOut, total: b.total };
+      return;
+    }
+    if (savedRef.current.checkOut !== b.checkOut || savedRef.current.total !== b.total) {
+      updateBooking(b.id, {
+        checkOut: b.checkOut,
+        nights: b.nights,
+        total: b.total,
+        balanceDue: b.balanceDue,
+        roomId: b.moveRoomId ?? b.roomId,
+        roomName: b.moveRoomId ? (getRoom(b.moveRoomId)?.name ?? b.roomName) : b.roomName,
+      });
+      savedRef.current = { id: b.id, checkOut: b.checkOut, total: b.total };
+    }
+  }, [state.booking, room.pricePerNight]);
 
   // reveal loop — own messages instantly, incoming after a typing beat
   useEffect(() => {

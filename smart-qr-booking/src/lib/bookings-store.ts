@@ -47,19 +47,36 @@ export type NewBooking = Omit<Booking, "id" | "nights" | "total" | "createdAt" |
   status?: Booking["status"];
 };
 
-/** Save a booking and return the stored record (with generated id). */
-export function saveBooking(input: NewBooking): Booking {
+/**
+ * Save a booking and return the stored record.
+ * Pass `id` when the caller already showed one to the guest (e.g. mid-chat)
+ * so the record on screen and the one in admin match exactly. If that id
+ * already exists (e.g. a demo reset regenerated the same id) it's replaced
+ * rather than duplicated.
+ */
+export function saveBooking(input: NewBooking, id?: string): Booking {
   const list = read();
   // Continue the global sequence after the seeded bookings (…-006 → …-007).
   const sequence = mockBookings.length + list.length + 1;
   const booking: Booking = {
     ...input,
-    id: makeBookingId(input.checkIn, sequence),
+    id: id ?? makeBookingId(input.checkIn, sequence),
     status: input.status ?? "confirmed",
     createdAt: new Date().toISOString(),
   };
-  write([...list, booking]);
+  const i = list.findIndex((b) => b.id === booking.id);
+  if (i === -1) write([...list, booking]);
+  else write(list.map((b, idx) => (idx === i ? booking : b)));
   return booking;
+}
+
+/** Update fields on an already-saved booking (e.g. after an approved extension). */
+export function updateBooking(id: string, patch: Partial<Booking>): void {
+  const list = read();
+  const i = list.findIndex((b) => b.id === id);
+  if (i === -1) return; // seeded/mock bookings aren't in localStorage — nothing to patch
+  list[i] = { ...list[i], ...patch };
+  write(list);
 }
 
 export function getBooking(id: string): Booking | undefined {

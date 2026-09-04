@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const STEPS = [
   "Guest scans the room QR → WhatsApp opens on that room.",
   "They ask questions and book — name, phone, dates & times, guests.",
-  "The front desk gets the booking on their WhatsApp instantly.",
+  "A 50% advance secures it. The front desk gets the booking, paid amount and balance due, instantly.",
   "On the last evening the guest is asked: extend or check out?",
   "Extend → the desk approves, or moves the guest to a free room if it's re-booked.",
 ];

@@ -118,7 +118,14 @@ export default function AdminBookingsPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(b.checkIn)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(b.checkOut)}</td>
                   <td className="px-4 py-3 text-center text-muted">{b.guests}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{formatINR(b.total)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right text-ink">
+                    {formatINR(b.total)}
+                    {b.advancePaid !== undefined && (
+                      <span className="block text-[10.5px] font-normal text-sage">
+                        Paid {formatINR(b.advancePaid)} · Due {formatINR(b.balanceDue ?? 0)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 capitalize text-muted">{b.source}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={b.status} />

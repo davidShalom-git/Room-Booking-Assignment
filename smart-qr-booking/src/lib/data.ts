@@ -218,6 +218,9 @@ export type Booking = {
   status: BookingStatus;
   source: BookingSource;
   createdAt: string; // ISO
+  /** Advance collected up front (demo: simulated, no real gateway). Undefined = paid in full / not tracked. */
+  advancePaid?: number;
+  balanceDue?: number;
 };
 
 export const mockBookings: Booking[] = [
