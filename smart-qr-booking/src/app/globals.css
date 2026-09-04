@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ *  The Coral Courtyard — editorial-luxury design tokens (light only)
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-cream: #fbf8f3;
+  --color-paper: #ffffff;
+  --color-sand: #f3ece1;
+  --color-shell: #efe6d8;
+  --color-ink: #262119;
+  --color-muted: #6e655a;
+  --color-faint: #9a9083;
+  --color-clay: #b4552d;
+  --color-clay-dark: #97441f;
+  --color-clay-soft: #f1e2d8;
+  --color-sage: #566a53;
+  --color-sage-soft: #e7ede1;
+  --color-hairline: #e7ddcd;
+  --color-gold: #c98a3c;
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  --shadow-soft: 0 1px 2px rgba(38, 33, 25, 0.04),
+    0 12px 32px -12px rgba(38, 33, 25, 0.14);
+  --shadow-lift: 0 2px 6px rgba(38, 33, 25, 0.05),
+    0 30px 60px -24px rgba(38, 33, 25, 0.24);
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-clay);
+  color: #fff;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+/* Film-grain overlay on a fixed pseudo-element (perf-safe) */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.7s var(--ease-fluid) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+.reveal-hidden {
+  opacity: 0;
+}
+.reveal-in {
+  animation: rise 0.8s var(--ease-fluid) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal-hidden {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+.typing-dot {
+  animation: blink 1.2s infinite;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-shell);
+  border-radius: 9999px;
+}
+
+@media print {
+  .grain::after {
+    display: none;
+  }
+}
