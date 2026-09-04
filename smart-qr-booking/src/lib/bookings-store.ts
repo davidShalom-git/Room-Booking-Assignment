@@ -78,7 +78,3 @@ export function updateBooking(id: string, patch: Partial<Booking>): void {
   list[i] = { ...list[i], ...patch };
   write(list);
 }
-
-export function getBooking(id: string): Booking | undefined {
-  return allBookings().find((b) => b.id === id);
-}

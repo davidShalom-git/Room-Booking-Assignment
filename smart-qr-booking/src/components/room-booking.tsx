@@ -3,14 +3,12 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { Room } from "@/lib/data";
 import { nights, bookingTotal, formatINR, formatDate, todayISO, addDays } from "@/lib/pricing";
 import { config } from "@/config";
 import { Icon } from "@/components/icons";
 
 export function RoomBooking({ room }: { room: Room }) {
-  const router = useRouter();
   const [active, setActive] = useState(0);
   const [checkIn, setCheckIn] = useState(addDays(todayISO(), 1));
   const [checkOut, setCheckOut] = useState(addDays(todayISO(), 3));
@@ -19,11 +17,6 @@ export function RoomBooking({ room }: { room: Room }) {
   const n = useMemo(() => nights(checkIn, checkOut), [checkIn, checkOut]);
   const total = bookingTotal(room.pricePerNight, n);
   const valid = n > 0;
-
-  const goBook = () => {
-    const q = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
-    router.push(`/rooms/${room.id}/book?${q.toString()}`);
-  };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
@@ -155,25 +148,20 @@ export function RoomBooking({ room }: { room: Room }) {
               )}
             </div>
 
-            <button
-              onClick={goBook}
-              disabled={!valid}
-              className="group mt-4 flex w-full items-center justify-between rounded-full bg-clay py-2.5 pl-6 pr-2 text-sm font-medium text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-clay-dark active:scale-[0.98] disabled:opacity-40"
-            >
-              Book now
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 transition-transform duration-500 group-hover:translate-x-0.5">
-                <Icon.arrowRight width={15} height={15} />
-              </span>
-            </button>
             <Link
               href={`/whatsapp?room=${room.id}`}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#1f8a4c]/30 py-2.5 text-sm font-medium text-[#1a7a42] transition-colors hover:bg-[#1f8a4c]/[0.06]"
+              aria-disabled={!valid}
+              className={`group mt-4 flex w-full items-center justify-between rounded-full bg-[#1f8a4c] py-2.5 pl-6 pr-2 text-sm font-medium text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#1a7a42] active:scale-[0.98] ${
+                !valid ? "pointer-events-none opacity-40" : ""
+              }`}
             >
-              <Icon.whatsapp width={15} height={15} />
-              Continue on WhatsApp
+              Enquire on WhatsApp
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform duration-500 group-hover:translate-x-0.5">
+                <Icon.whatsapp width={15} height={15} />
+              </span>
             </Link>
             <p className="mt-3 text-center text-[11px] text-faint">
-              No card needed · pay {formatINR(total)} at the property · free cancellation 48h
+              Booking is confirmed on WhatsApp · pay {formatINR(total)} at the property
             </p>
           </div>
         </div>

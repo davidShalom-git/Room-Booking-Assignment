@@ -1,6 +1,6 @@
 import { config, roomUrl } from "@/config";
 import { formatDate, nights, bookingTotal, formatINR } from "@/lib/pricing";
-import type { Room, Booking } from "@/lib/data";
+import type { Room } from "@/lib/data";
 
 export type EnquiryContext = {
   room?: Pick<Room, "id" | "name" | "pricePerNight">;
@@ -35,25 +35,6 @@ export function enquiryMessage(ctx: EnquiryContext): string {
     lines.push("Could you let me know about availability?");
   }
   return lines.join("\n");
-}
-
-/** Confirmation message the guest receives after a booking is confirmed. */
-export function confirmationMessage(b: Booking): string {
-  return [
-    `✅ Booking confirmed at ${config.property.name}`,
-    "",
-    `Name: ${b.guestName}`,
-    `Booking ID: ${b.id}`,
-    `Room: ${b.roomName} — ${b.roomId}`,
-    `Check-in: ${formatDate(b.checkIn)} (from ${config.property.checkIn})`,
-    `Check-out: ${formatDate(b.checkOut)} (by ${config.property.checkOut})`,
-    `Duration: ${b.nights} night${b.nights > 1 ? "s" : ""}`,
-    `Guests: ${b.guests}`,
-    `Total: ${formatINR(b.total)} (pay at property)`,
-    "",
-    `${config.property.address}`,
-    `Questions? Just reply to this chat.`,
-  ].join("\n");
 }
 
 /** wa.me deep link with a pre-filled message. Opens WhatsApp on any device. */
