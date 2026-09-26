@@ -4,11 +4,13 @@
  * Admin server actions: session check first, then the tested logic in lib/admin-ops.ts.
  * Plain forms post here, so everything works without client JavaScript.
  */
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { SESSION_COOKIE, SESSION_MAX_AGE, checkPassword, sessionConfigured, signSession } from "@/lib/session";
+import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/session";
+import { attemptLogin, changePassword, loginConfigured, newRecoveryCode, recoverWithCode } from "@/lib/owner-login";
+import { saveSettings } from "@/lib/settings";
 import * as ops from "@/lib/admin-ops";
 import { OWNER_PUSH, removePushSubscription, savePushSubscription, sendOwnerPush } from "@/lib/push";
 
@@ -19,14 +21,9 @@ const safeNext = (n: string) => (/^\/admin(\/|\?|$)/.test(n) ? n : "/admin");
 const formValues = (fd: FormData) =>
   Object.fromEntries([...fd.entries()].filter(([k]) => !k.startsWith("$")).map(([k, v]) => [k, String(v)]));
 
-export async function login(formData: FormData) {
-  const next = safeNext(String(formData.get("next") ?? ""));
-  if (!sessionConfigured()) redirect(`/admin/login?error=config`);
-  if (!checkPassword(String(formData.get("password") ?? ""))) {
-    // ponytail: a fixed delay slows guessing; add a real rate limit if the console is ever targeted.
-    await new Promise((r) => setTimeout(r, 750));
-    redirect(`/admin/login?error=password&next=${encodeURIComponent(next)}`);
-  }
+const ipOf = async () => (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+
+async function signIn() {
   (await cookies()).set(SESSION_COOKIE, signSession(), {
     httpOnly: true,
     sameSite: "lax",
@@ -34,6 +31,17 @@ export async function login(formData: FormData) {
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
+}
+
+export async function login(formData: FormData) {
+  const next = safeNext(String(formData.get("next") ?? ""));
+  if (!(await loginConfigured())) redirect(`/admin/login?error=config`);
+  const r = await attemptLogin(String(formData.get("password") ?? ""), await ipOf());
+  if (r !== "ok") {
+    if (r === "wrong") await new Promise((res) => setTimeout(res, 750)); // slows guessing further
+    redirect(`/admin/login?error=${r === "limited" ? "limited" : "password"}&next=${encodeURIComponent(next)}`);
+  }
+  await signIn();
   redirect(next);
 }
 
@@ -142,4 +150,44 @@ export async function removePushAction(endpoint: string): Promise<void> {
 export async function testPushAction(): Promise<number> {
   await requireAdmin();
   return sendOwnerPush({ to: OWNER_PUSH, text: "🔔 Notifications are on\nPayments, new bookings and the 9 PM summary will show up here." });
+}
+
+// --- settings and sign-in (the Settings screen, and "Forgot password?" on the login page) ----------
+
+export type SettingsState = { n: number; ok?: boolean; message?: string; error?: string; field?: string; values?: Record<string, string> };
+
+export async function saveSettingsAction(prev: SettingsState, formData: FormData): Promise<SettingsState> {
+  await requireAdmin();
+  const values = formValues(formData);
+  const r = await saveSettings(values);
+  if (!r.ok) return { n: prev.n + 1, error: r.error, field: r.field, values };
+  revalidatePath("/", "layout");
+  return { n: prev.n + 1, ok: true, message: "Saved — your website shows the new details now." };
+}
+
+export type PasswordState = { n: number; ok?: boolean; error?: string; field?: string; code?: string };
+
+/** Change the password: every other phone and browser is signed out, this one stays in. */
+export async function changePasswordAction(prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  await requireAdmin();
+  const v = formValues(formData);
+  const r = await changePassword({ current: v["current"] ?? "", next: v["next"] ?? "", confirm: v["confirm"] ?? "" });
+  if (!r.ok) return { n: prev.n + 1, error: r.error, field: r.field };
+  await signIn();
+  return { n: prev.n + 1, ok: true };
+}
+
+/** A new recovery code, shown once. */
+export async function recoveryCodeAction(prev: PasswordState): Promise<PasswordState> {
+  await requireAdmin();
+  return { n: prev.n + 1, ok: true, code: (await newRecoveryCode()).code };
+}
+
+/** Forgotten password (signed out): the recovery code sets a new password and signs in. */
+export async function recoverAction(prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const v = formValues(formData);
+  const r = await recoverWithCode({ code: v["code"] ?? "", next: v["next"] ?? "", confirm: v["confirm"] ?? "" }, await ipOf());
+  if (!r.ok) return { n: prev.n + 1, error: r.error, field: r.field };
+  await signIn();
+  return { n: prev.n + 1, ok: true, code: r.code };
 }

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { config } from "@/config";
+import { siteSettings } from "@/lib/site-settings";
+import { phonePretty } from "@/lib/phone";
+import type { Settings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Privacy policy" };
 
-const P = config.property;
-
-const SECTIONS: { id?: string; title: string; body: string[] }[] = [
+const sections = (P: Settings): { id?: string; title: string; body: string[] }[] => [
   {
     title: "What we collect",
     body: [
@@ -18,6 +18,7 @@ const SECTIONS: { id?: string; title: string; body: string[] }[] = [
     title: "How we use it",
     body: [
       "To hold and confirm your booking, record what you've paid, answer you in the chat, remind you the day before check-out, call you if something needs sorting out, and meet our legal and tax obligations as a hotel.",
+      "The front desk may also send your confirmation to the mobile number you gave, for example on WhatsApp from its own phone.",
       "We don't sell your information and don't use it for advertising.",
     ],
   },
@@ -38,7 +39,7 @@ const SECTIONS: { id?: string; title: string; body: string[] }[] = [
     id: "delete",
     title: "Your choices — and deleting your data",
     body: [
-      `You can ask to see, correct or delete the information we hold about you. Call us on ${P.phone} or email ${P.email} with the mobile number you booked with, and we'll reply within 30 days. We'll delete everything we aren't legally required to keep.`,
+      `You can ask to see, correct or delete the information we hold about you. Call us on ${phonePretty(P.phone)}${P.email ? ` or email ${P.email}` : ""} with the mobile number you booked with, and we'll reply within 30 days. We'll delete everything we aren't legally required to keep.`,
     ],
   },
   {
@@ -50,12 +51,13 @@ const SECTIONS: { id?: string; title: string; body: string[] }[] = [
   {
     title: "Changes and contact",
     body: [
-      `If we change this policy we'll update this page. Questions: ${P.name}, ${P.address} · ${P.phone} · ${P.email}.`,
+      `If we change this policy we'll update this page. Questions: ${[`${P.name}, ${P.address}`, phonePretty(P.phone), P.email].filter(Boolean).join(" · ")}.`,
     ],
   },
 ];
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const P = await siteSettings();
   return (
     <div className="px-4 pt-28">
       <div className="mx-auto max-w-2xl">
@@ -65,7 +67,7 @@ export default function PrivacyPage() {
           How {P.name} uses the information you share when you book or chat with us. Last updated 26 September 2026.
         </p>
         <div className="mt-10 space-y-9">
-          {SECTIONS.map((s) => (
+          {sections(P).map((s) => (
             <section key={s.title} id={s.id} className="scroll-mt-28">
               <h2 className="font-display text-2xl text-ink">{s.title}</h2>
               {s.body.map((p) => (

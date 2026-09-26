@@ -10,7 +10,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { Payment } from "@/generated/prisma/client";
-import { config } from "@/config";
+import { getSettings } from "@/lib/settings";
 import { bad, bookingRef, getBooking, good, reviveHold, withRoom, type BookingRow, type Result } from "@/lib/engine";
 
 export type PaymentRow = Payment & { booking: BookingRow };
@@ -135,7 +135,7 @@ export async function confirmBooking(id: string, amount?: number, now?: Date): P
       data: {
         bookingId: id,
         kind: b.parentId ? "EXTENSION" : "ADVANCE",
-        amount: b.parentId ? b.total : Math.round(b.total * config.advanceRate),
+        amount: b.parentId ? b.total : Math.round((b.total * (await getSettings()).advancePercent) / 100),
         status: "AWAITING",
       },
       include: withBooking,

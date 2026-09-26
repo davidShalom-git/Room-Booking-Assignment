@@ -19,9 +19,10 @@ import { istDate, parseDateText, parseEnquiry, parseNights } from "@/lib/dates";
 import { addDays, formatINR, nights as nightsBetween } from "@/lib/pricing";
 import { normalizePhone, validPhone } from "@/lib/phone";
 import * as C from "./copy";
+import type { Settings } from "@/lib/settings";
 import { OWNER_PUSH, type BookingView, type ConvState, type InEvent, type Out, type PaymentView, type Ports, type RoomInfo, type StayView, type StepResult } from "./types";
 
-type Ctx = { conv: ConvState; ports: Ports; out: Out[]; today: string };
+type Ctx = { conv: ConvState; ports: Ports; out: Out[]; today: string; s: Settings };
 type Buttons = NonNullable<Out["buttons"]>;
 
 const MAX_NIGHTS = config.defaults.maxNights;
@@ -34,6 +35,7 @@ export async function step(prev: ConvState, ev: InEvent, ports: Ports): Promise<
     ports,
     out: [],
     today: istDate(ports.now()),
+    s: await ports.settings(),
   };
   if (ev.kind === "button" && ev.id === "restart") {
     resetFlow(c);
@@ -148,18 +150,18 @@ async function currentHold(c: Ctx, id?: string): Promise<Hold | null> {
   c.conv.draft.bookingId = b.id;
   return { b, p };
 }
-const owed = (h: Hold) => h.p?.amount ?? (h.b.parentId ? h.b.total : C.advanceOf(h.b.total));
+const owed = (c: Ctx, h: Hold) => h.p?.amount ?? (h.b.parentId ? h.b.total : C.advanceOf(h.b.total, c.s));
 
 async function intro(c: Ctx) {
   const room = await roomOf(c);
   if (!room) return welcome(c);
-  say(c, C.intro(room), { buttons: MENU });
+  say(c, C.intro(c.s, room), { buttons: MENU });
 }
 
 async function welcome(c: Ctx) {
   c.conv.roomId = null;
   const rooms = (await c.ports.rooms()).slice(0, 10);
-  say(c, C.welcome(), {
+  say(c, C.welcome(c.s), {
     list: {
       button: "Choose a room",
       rows: rooms.map((r) => ({ id: `pick:${r.id}`, title: `Room ${r.id} · ${formatINR(r.pricePerNight)}`, description: r.name })),
@@ -224,12 +226,12 @@ async function onBrowsingText(c: Ctx, t: string, low: string) {
   const room = await roomOf(c);
   if (/\b(thanks|thank you|thx|ok thanks)\b/.test(low)) return say(c, C.thanks());
   if (/\b(staff|human|reception|desk|call me|talk to)\b/.test(low)) {
-    say(c, C.handoff());
+    say(c, C.handoff(c.s));
     return alertOwner(c, C.ownerHandoff({ room, phone: c.conv.draft.phone }));
   }
   if (!room) return welcome(c);
   if (/\b(book|reserve|reservation)\b/.test(low)) return startBooking(c);
-  if (/breakfast/.test(low)) return say(c, C.breakfast());
+  if (/breakfast/.test(low)) return say(c, C.breakfast(c.s));
   if (/price|cost|rate|how much|tariff/.test(low)) return say(c, C.priceText(room));
   if (/avail|vacan|\bfree\b/.test(low)) return startAvailability(c);
   if (/tell me|about|detail|amenit|what.*(room|include)|info/.test(low)) {
@@ -405,7 +407,7 @@ function showReview(c: Ctx, room: RoomInfo) {
   c.conv.stage = "review";
   say(
     c,
-    C.review(room, {
+    C.review(c.s, room, {
       name: d.name!,
       phone: d.phone!,
       checkIn: d.checkIn!,
@@ -468,7 +470,7 @@ async function onConfirm(c: Ctx) {
     c.conv.stage = "awaiting_payment";
     c.conv.draft.bookingId = held[0].id;
     const p = await c.ports.openPayment(held[0].id);
-    return say(c, C.alreadyHolding(held[0], p?.amount ?? C.advanceOf(held[0].total)), { buttons: payButtons(held[0]) });
+    return say(c, C.alreadyHolding(held[0], p?.amount ?? C.advanceOf(held[0].total, c.s)), { buttons: payButtons(held[0]) });
   }
 
   const r = await c.ports.createHold({
@@ -500,13 +502,13 @@ async function startPayment(c: Ctx, b: BookingView, lead?: string) {
   c.conv.stage = "awaiting_payment";
   c.conv.draft.bookingId = b.id;
   const p = await c.ports.openPayment(b.id);
-  const amount = p?.amount ?? (b.parentId ? b.total : C.advanceOf(b.total));
-  say(c, `${lead ? `${lead}\n\n` : ""}${C.paymentRequest(b, c.ports.settings, amount)}`, { buttons: payButtons(b) });
+  const amount = p?.amount ?? (b.parentId ? b.total : C.advanceOf(b.total, c.s));
+  say(c, `${lead ? `${lead}\n\n` : ""}${C.paymentRequest(c.s, b, amount)}`, { buttons: payButtons(b) });
 }
 
 async function resendPayment(c: Ctx) {
   const h = await currentHold(c);
-  if (h) say(c, C.paymentRequest(h.b, c.ports.settings, owed(h)), { buttons: payButtons(h.b) });
+  if (h) say(c, C.paymentRequest(c.s, h.b, owed(c, h)), { buttons: payButtons(h.b) });
 }
 
 async function remindPayment(c: Ctx) {
@@ -516,14 +518,14 @@ async function remindPayment(c: Ctx) {
     return intro(c);
   }
   if (h.p?.status === "CLAIMED") return say(c, C.claimStillChecking(h.p), { buttons: payButtons(h.b) });
-  return say(c, C.paymentReminder(h.b, owed(h)), { buttons: payButtons(h.b) });
+  return say(c, C.paymentReminder(h.b, owed(c, h)), { buttons: payButtons(h.b) });
 }
 
 async function askForUtr(c: Ctx, id?: string) {
   const h = await currentHold(c, id);
   if (!h) return say(c, C.staleButton());
   c.conv.stage = "need_utr";
-  say(c, C.askUtr(owed(h)));
+  say(c, C.askUtr(owed(c, h)));
 }
 
 async function onPaymentText(c: Ctx, t: string, low: string) {

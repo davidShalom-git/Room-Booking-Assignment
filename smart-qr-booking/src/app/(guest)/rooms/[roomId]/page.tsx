@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRooms, tonightLabel } from "@/lib/rooms";
-import { config, roomUrl } from "@/config";
+import { roomUrl } from "@/config";
 import { formatINR } from "@/lib/pricing";
 import { qrSvg } from "@/lib/qr";
 import { Icon, amenityIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/status-badge";
 import { RoomBooking } from "@/components/room-booking";
+import { siteSettings } from "@/lib/site-settings";
 import { RoomCard } from "@/components/room-card";
 import { Reveal } from "@/components/reveal";
 
@@ -31,7 +32,7 @@ export default async function RoomPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params;
-  const rooms = await getRooms();
+  const [rooms, s] = await Promise.all([getRooms(), siteSettings()]);
   const room = rooms.find((r) => r.id === decodeURIComponent(roomId));
   if (!room) notFound();
 
@@ -73,11 +74,16 @@ export default async function RoomPage({
               {room.name}
             </h1>
             <p className="mt-2 flex items-center gap-2 text-[13px] text-muted">
-              <span className="flex items-center gap-1 text-gold">
-                <Icon.star width={14} height={14} />
-                {config.property.rating}
-              </span>
-              · {room.type} · Floor {room.floor}
+              {s.rating !== null && (
+                <>
+                  <span className="flex items-center gap-1 text-gold">
+                    <Icon.star width={14} height={14} />
+                    {s.rating}
+                  </span>
+                  ·
+                </>
+              )}
+              {room.type} · Floor {room.floor}
             </p>
           </div>
           <p className="shrink-0">
@@ -87,7 +93,7 @@ export default async function RoomPage({
         </div>
 
         <div className="py-9">
-          <RoomBooking room={room} />
+          <RoomBooking room={room} terms={s} />
         </div>
 
         {/* Facts */}

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { saveRoomAction, type FormState } from "@/app/admin/actions";
 import { Field, inputCls } from "./field";
 import { SubmitButton } from "./submit-button";
+import { PhotoPicker } from "./photo-picker";
 
 export type RoomFormValues = {
   id: string;
@@ -30,7 +31,7 @@ export function RoomForm({ initial, existingId }: { initial: RoomFormValues; exi
   const v = (k: keyof RoomFormValues) => (sv ? (sv[k] ?? "") : String(initial[k]));
   const checked = (k: "ac" | "active") => (sv ? sv[k] === "on" : initial[k]);
   const bad = (f: string) => state.field === f;
-  const photos = v("images").split(/\r?\n/).map((s) => s.trim()).filter((s) => s.startsWith("https://"));
+  const photos = v("images").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
   return (
     <form key={state.n} action={action} className="mt-6 space-y-6">
@@ -101,17 +102,11 @@ export function RoomForm({ initial, existingId }: { initial: RoomFormValues; exi
         <Field label="Amenities" error={bad("amenities")} hint="One per line (or comma-separated).">
           <textarea name="amenities" defaultValue={v("amenities")} rows={5} className={inputCls(bad("amenities"))} />
         </Field>
-        <Field label="Photos" error={bad("images")} hint="One https:// image URL per line. The first is the cover photo.">
-          <textarea name="images" defaultValue={v("images")} rows={4} className={`${inputCls(bad("images"))} font-mono text-[12px]`} />
-        </Field>
-        {photos.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {photos.slice(0, 12).map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element -- arbitrary owner-supplied hosts
-              <img key={src + i} src={src} alt="" className="h-16 w-24 rounded-lg border border-hairline object-cover" />
-            ))}
-          </div>
-        )}
+        <div>
+          <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${bad("images") ? "text-clay" : "text-faint"}`}>Photos</span>
+          <p className="mb-2 mt-0.5 text-[11.5px] text-faint">Take them on your phone or pick from the gallery. The first is the cover photo (tap ★ to change it).</p>
+          <PhotoPicker name="images" initial={photos} max={12} error={bad("images")} />
+        </div>
       </section>
 
       <div className="flex justify-end">

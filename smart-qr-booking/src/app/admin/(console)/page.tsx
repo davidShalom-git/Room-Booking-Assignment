@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { config } from "@/config";
 import { requireAdmin } from "@/lib/auth";
 import { dashboardData, type AdminBooking } from "@/lib/admin-data";
 import { istTime } from "@/lib/dates";
@@ -9,8 +8,9 @@ import { StatusBadge } from "@/components/status-badge";
 import { Icon } from "@/components/icons";
 import { OccupancyGrid } from "@/components/admin/occupancy-grid";
 import { BookingActions, PaymentDecision } from "@/components/admin/booking-actions";
+import { siteSettings } from "@/lib/site-settings";
 import { Flash, one } from "@/components/admin/field";
-import { phonePretty } from "@/lib/bot/copy";
+import { phonePretty } from "@/lib/phone";
 
 export const metadata = { title: "Dashboard" };
 
@@ -55,7 +55,7 @@ export default async function Dashboard({
 }) {
   await requireAdmin();
   const sp = await searchParams;
-  const d = await dashboardData();
+  const [d, s] = await Promise.all([dashboardData(), siteSettings()]);
 
   return (
     <div>
@@ -141,14 +141,14 @@ export default async function Dashboard({
                   </p>
                   <p className="mt-0.5 text-muted">
                     {b.ref} · {b.parentId ? "extension" : "advance"}{" "}
-                    {formatINR(b.openPayment?.amount ?? (b.parentId ? b.total : Math.round(b.total * config.advanceRate)))} of {formatINR(b.total)}
+                    {formatINR(b.openPayment?.amount ?? (b.parentId ? b.total : Math.round((b.total * s.advancePercent) / 100)))} of {formatINR(b.total)}
                     {b.holdExpiresAt && <> · held until {formatTime(istTime(new Date(b.holdExpiresAt)))}</>} ·{" "}
                     <a href={`tel:+${b.guestPhone}`} className="text-clay underline-offset-2 hover:underline">
                       {phonePretty(b.guestPhone)}
                     </a>
                   </p>
                 </div>
-                <BookingActions booking={b} path="/admin" />
+                <BookingActions booking={b} path="/admin" settings={s} />
               </li>
             ))}
           </ul>

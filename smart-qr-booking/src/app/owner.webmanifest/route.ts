@@ -1,13 +1,12 @@
 /** The owner app's manifest: installing the console from the phone's browser opens the Today screen. */
-import { config } from "@/config";
+import { getSettings } from "@/lib/settings";
 
-export const dynamic = "force-static";
-
-export function GET() {
+export async function GET() {
+  const { name } = await getSettings();
   const manifest = {
-    name: `${config.property.name} — Owner`,
+    name: `${name} — Owner`,
     short_name: "Owner",
-    description: `Bookings, payments and rooms for ${config.property.name}.`,
+    description: `Bookings, payments and rooms for ${name}.`,
     id: "/admin/today",
     start_url: "/admin/today",
     scope: "/admin/",

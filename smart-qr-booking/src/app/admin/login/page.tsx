@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { config } from "@/config";
+import { siteSettings } from "@/lib/site-settings";
 import { isAdmin } from "@/lib/auth";
 import { login } from "../actions";
 import { SubmitButton } from "@/components/admin/submit-button";
@@ -9,7 +10,8 @@ export const metadata: Metadata = { title: "Sign in" };
 
 const ERRORS: Record<string, string> = {
   password: "That password isn't right.",
-  config: "Sign-in isn't set up yet: ADMIN_PASSWORD and SESSION_SECRET must be configured.",
+  limited: "Too many wrong passwords from this network. Please wait 15 minutes and try again.",
+  config: "Sign-in isn't set up yet: SESSION_SECRET and a password (ADMIN_PASSWORD) must be configured.",
 };
 
 export default async function LoginPage({
@@ -19,13 +21,14 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   if (await isAdmin()) redirect(sp.next?.startsWith("/admin") ? sp.next : "/admin");
+  const s = await siteSettings();
   const error = sp.error ? (ERRORS[sp.error] ?? ERRORS.password) : null;
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm rounded-[1.75rem] border border-hairline bg-paper p-1.5 shadow-[var(--shadow-soft)]">
         <form action={login} className="rounded-[1.4rem] bg-sand/40 p-6 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.6)]">
-          <p className="font-display text-xl text-ink">{config.property.name}</p>
+          <p className="font-display text-xl text-ink">{s.name}</p>
           <p className="text-[11px] uppercase tracking-[0.16em] text-faint">Owner console</p>
 
           <label className="mt-7 block">
@@ -56,6 +59,9 @@ export default async function LoginPage({
           >
             Sign in
           </SubmitButton>
+          <Link href="/admin/recover" className="mt-4 block text-center text-[12.5px] text-muted underline-offset-2 hover:text-ink hover:underline">
+            Forgot your password?
+          </Link>
         </form>
       </div>
     </div>

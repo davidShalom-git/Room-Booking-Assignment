@@ -4,7 +4,8 @@
  */
 import { prisma } from "@/lib/db";
 import { occupancy, sweepHolds } from "@/lib/engine";
-import { duplicateRefs } from "@/lib/payments";
+import { duplicateRefs, paymentById } from "@/lib/payments";
+import { getSettings } from "@/lib/settings";
 import { acknowledgeAsAdmin, rejectAsAdmin } from "@/lib/admin-ops";
 import { paymentView } from "@/lib/bot/ports-prisma";
 import * as C from "@/lib/bot/copy";
@@ -12,7 +13,8 @@ import { verifyOwnerAction } from "@/lib/session";
 import { toInstant } from "@/lib/dates";
 import { addDays, formatDate, formatINR, todayISO } from "@/lib/pricing";
 
-export type ActResult = { ok: true; message: string } | { ok: false; error: string };
+/** `whatsapp`: after Acknowledge, the confirmation ready to send from the owner's own WhatsApp. */
+export type ActResult = { ok: true; message: string; whatsapp?: string } | { ok: false; error: string };
 
 /** Acknowledge / Not received from a notification. The token names the payment (see session.ts). */
 export async function ownerAct(token: string, action: "ack" | "nack"): Promise<ActResult> {
@@ -20,7 +22,10 @@ export async function ownerAct(token: string, action: "ack" | "nack"): Promise<A
   if (!paymentId) return { ok: false, error: "This alert has expired. Open the app to check the payment." };
   const r = action === "ack" ? await acknowledgeAsAdmin(paymentId, "") : await rejectAsAdmin(paymentId);
   if (!r.ok) return { ok: false, error: r.error };
-  return { ok: true, message: r.message ?? (action === "ack" ? "Acknowledged." : "Marked as not received.") };
+  const message = r.message ?? (action === "ack" ? "Acknowledged." : "Marked as not received.");
+  const p = action === "ack" ? await paymentById(paymentId) : null;
+  if (p?.booking.status !== "CONFIRMED") return { ok: true, message };
+  return { ok: true, message, whatsapp: C.whatsappConfirmation(await getSettings(), paymentView(p).booking) };
 }
 
 export type OwnerToday = Awaited<ReturnType<typeof ownerToday>>;

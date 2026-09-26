@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { RoomWithStatus } from "@/lib/room-status";
-import { nights, bookingTotal, formatINR, formatDate, todayISO, addDays } from "@/lib/pricing";
+import { nights, bookingTotal, formatINR, formatDate, formatTime, todayISO, addDays } from "@/lib/pricing";
 import { config } from "@/config";
 import { enquiryMessage } from "@/lib/enquiry";
 import { Icon } from "@/components/icons";
@@ -12,7 +12,14 @@ import { openChat } from "@/components/chat-widget";
 type Room = Pick<RoomWithStatus, "id" | "name" | "pricePerNight" | "capacity" | "images">;
 type Check = { key: string; state: "available" | "unavailable" | "error"; message?: string };
 
-export function RoomBooking({ room }: { room: Room }) {
+export function RoomBooking({
+  room,
+  terms,
+}: {
+  room: Room;
+  /** From the owner's settings. */
+  terms: { advancePercent: number; checkInTime: string; checkOutTime: string };
+}) {
   const [active, setActive] = useState(0);
   const [checkIn, setCheckIn] = useState(addDays(todayISO(), 1));
   const [checkOut, setCheckOut] = useState(addDays(todayISO(), 3));
@@ -22,7 +29,7 @@ export function RoomBooking({ room }: { room: Room }) {
   const n = useMemo(() => nights(checkIn, checkOut), [checkIn, checkOut]);
   const total = bookingTotal(room.pricePerNight, n);
   const valid = n > 0 && n <= config.defaults.maxNights;
-  const advance = Math.round(total * config.advanceRate);
+  const advance = Math.round((total * terms.advancePercent) / 100);
 
   // Live availability for the chosen dates (debounced; stale answers are ignored by key).
   const key = `${room.id}|${checkIn}|${checkOut}|${guests}`;
@@ -214,7 +221,7 @@ export function RoomBooking({ room }: { room: Room }) {
             </button>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-faint">
               {valid
-                ? `Reserve in the chat with a ${Math.round(config.advanceRate * 100)}% advance (${formatINR(advance)}) by UPI · balance at check-in`
+                ? `Reserve in the chat with a ${terms.advancePercent}% advance (${formatINR(advance)}) by UPI · balance at check-in`
                 : "Pick your dates, then book in the chat"}
             </p>
           </div>
@@ -224,7 +231,7 @@ export function RoomBooking({ room }: { room: Room }) {
           <Icon.calendar width={15} height={15} className="mt-0.5 shrink-0 text-clay" />
           <span>
             {valid
-              ? `${formatDate(checkIn)} → ${formatDate(checkOut)} · check-in from ${config.property.checkIn}, check-out by ${config.property.checkOut}`
+              ? `${formatDate(checkIn)} → ${formatDate(checkOut)} · check-in from ${formatTime(terms.checkInTime)}, check-out by ${formatTime(terms.checkOutTime)}`
               : "Pick your dates to see the total."}
           </span>
         </div>

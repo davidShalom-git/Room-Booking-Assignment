@@ -95,8 +95,9 @@ async function main() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "ack", token: signOwnerAction(paymentId) }),
       });
-      const j = (await r.json()) as { ok: boolean; error?: string };
+      const j = (await r.json()) as { ok: boolean; error?: string; whatsapp?: string };
       assert.ok(j.ok, j.error);
+      return j.whatsapp;
     };
     const claimOf = (bookingId: string) => prisma.payment.findFirstOrThrow({ where: { bookingId, status: "CLAIMED" } });
 
@@ -138,7 +139,8 @@ async function main() {
     assert.match((await asha.last()).text, /with the front desk/);
     const claim = await claimOf(held.id);
     assert.equal(claim.utr, "412345678901");
-    await acknowledge(claim.id);
+    const wa = await acknowledge(claim.id);
+    assert.ok(wa?.startsWith("https://wa.me/919812345678?text="), "offers the confirmation for the owner's WhatsApp");
     const confirmed = await prisma.booking.findUniqueOrThrow({ where: { id: held.id } });
     assert.equal(confirmed.status, "CONFIRMED");
     assert.equal(confirmed.advancePaid, 1800);
@@ -146,7 +148,7 @@ async function main() {
     assert.ok((await (await fetch(`${BASE}/pay/${held.id}`)).text()).includes("Booking confirmed"));
     const forged = await fetch(`${BASE}/api/owner/act`, { method: "POST", body: JSON.stringify({ action: "ack", token: "x.1.y" }) });
     assert.equal(forged.status, 400);
-    step("UTR in the chat -> owner acknowledges -> confirmed, ₹1,800 recorded, confirmation in the chat and on the pay page; forged token refused");
+    step("UTR in the chat -> owner acknowledges -> confirmed, ₹1,800 recorded, confirmation in the chat and on the pay page, and ready to send on WhatsApp; forged token refused");
 
     // --- same dates from another visitor: offered other rooms
     const ravi = visitor("10.0.0.2");
@@ -200,15 +202,39 @@ async function main() {
     for (const path of ["/", "/rooms", "/rooms/101", "/qr", "/about", "/contact", "/privacy"]) {
       const r = await fetch(BASE + path);
       assert.equal(r.status, 200, path);
-      assert.ok(!/whatsapp|wa\.me/i.test(await r.text()), `${path} has no WhatsApp left`);
+      assert.ok(!/wa\.me/.test(await r.text()), `${path} has no WhatsApp buttons`);
     }
-    for (const path of ["/owner.webmanifest", "/owner-icon/192", "/owner-sw.js"]) assert.equal((await fetch(BASE + path)).status, 200, path);
+    for (const path of ["/owner.webmanifest", "/owner-icon/192", "/owner-sw.js", "/admin/login", "/admin/recover"]) {
+      assert.equal((await fetch(BASE + path, { redirect: "manual" })).status, 200, path);
+    }
     for (const path of ["/rooms/nope", "/signin", "/account", "/book", "/whatsapp", "/api/whatsapp"]) {
       assert.equal((await fetch(BASE + path, { redirect: "manual" })).status, 404, path);
     }
-    const guard = await fetch(`${BASE}/admin/bookings`, { redirect: "manual" });
-    assert.ok([302, 307].includes(guard.status) && guard.headers.get("location")?.includes("/admin/login"));
-    step("availability API, guest pages render without WhatsApp, old sign-in/booking pages gone, /admin requires sign-in");
+    for (const path of ["/admin/bookings", "/admin/settings"]) {
+      const guard = await fetch(BASE + path, { redirect: "manual" });
+      assert.ok([302, 307].includes(guard.status) && guard.headers.get("location")?.includes("/admin/login"), path);
+    }
+    const upload = new FormData();
+    upload.append("photo", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], { type: "image/jpeg" }), "a.jpg");
+    assert.equal((await fetch(`${BASE}/api/owner/photos`, { method: "POST", body: upload })).status, 401, "uploads need the owner");
+    assert.equal((await fetch(`${BASE}/photos/missing`)).status, 404);
+    step("availability API, guest pages render without WhatsApp, old sign-in/booking pages gone, /admin and uploads require sign-in");
+
+    // --- the owner's settings show on the site straight away (no redeploy)
+    const { saveSettings, DEFAULT_SETTINGS } = await import("../src/lib/settings");
+    const saved = await saveSettings({
+      ...Object.fromEntries(Object.entries(DEFAULT_SETTINGS).map(([k, v]) => [k, Array.isArray(v) ? v.join("\n") : v == null ? "" : String(v)])),
+      name: "Hill View Rooms", phone: "94470 12345", upiId: "hillview@okaxis", upiName: "Hill View Rooms", advancePercent: "30",
+    });
+    assert.ok(saved.ok);
+    const home = await (await fetch(`${BASE}/`)).text();
+    assert.ok(home.includes("Hill View Rooms") && home.includes("+91 94470 12345") && !home.includes("The Coral Courtyard"), "home page shows the new details");
+    assert.match(await (await fetch(`${BASE}/contact`)).text(), /30(<!-- -->)?% advance/);
+    assert.match((await (await fetch(`${BASE}/owner.webmanifest`)).json() as { name: string }).name, /^Hill View Rooms/);
+    const ravi2 = visitor("10.0.0.3");
+    await ravi2.say("hi");
+    assert.match((await ravi2.last()).text, /Welcome to Hill View Rooms/);
+    step("the owner's settings (name, phone, advance) show on the site and in the chat straight away");
 
     console.log(`\nE2E passed — ${await prisma.chatMessage.count()} chat messages, ${await prisma.booking.count()} bookings.`);
     await prisma.$disconnect();

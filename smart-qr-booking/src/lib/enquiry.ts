@@ -1,4 +1,3 @@
-import { config } from "@/config";
 import { formatDate, nights, bookingTotal, formatINR } from "@/lib/pricing";
 
 type Room = { id: string; name: string; pricePerNight: number };
@@ -19,7 +18,7 @@ export function enquiryMessage(ctx: EnquiryContext): string {
   if (ctx.room) {
     lines.push(`Hi, I'm interested in Room ${ctx.room.id} — ${ctx.room.name}.`);
   } else {
-    lines.push(`Hi, I'd like to ask about a room at ${config.property.name}.`);
+    lines.push("Hi, I'd like to ask about a room.");
   }
   if (ctx.checkIn) lines.push(`Check-in: ${formatDate(ctx.checkIn)}`);
   if (ctx.checkOut) lines.push(`Check-out: ${formatDate(ctx.checkOut)}`);

@@ -4,7 +4,7 @@ import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  if (pathname === "/admin/login") return NextResponse.next();
+  if (pathname === "/admin/login" || pathname === "/admin/recover") return NextResponse.next();
   if (verifySession(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
   const url = new URL("/admin/login", request.url);
   url.searchParams.set("next", pathname + search);

@@ -1,6 +1,7 @@
 /**
  * Owner console sessions: a signed cookie `<expiry ms>.<nonce>.<HMAC-SHA256>` keyed with SESSION_SECRET.
- * Stateless — changing SESSION_SECRET signs everyone out. No Next.js imports, so proxy.ts can use it.
+ * Changing SESSION_SECRET signs everyone out; so does changing the owner's password (lib/owner-login.ts
+ * checks when a session was issued). No Next.js imports, so proxy.ts can use it.
  */
 import { createHmac, randomBytes } from "node:crypto";
 import { safeEqual } from "@/lib/secure";
@@ -15,10 +16,6 @@ function key(): string | null {
 }
 
 const mac = (payload: string, k: string) => createHmac("sha256", k).update(payload).digest("base64url");
-
-export function sessionConfigured(): boolean {
-  return key() !== null && (process.env["ADMIN_PASSWORD"] ?? "") !== "";
-}
 
 export function signSession(now: number = Date.now()): string {
   const k = key();
@@ -36,11 +33,6 @@ export function verifySession(token: string | null | undefined, now: number = Da
   if (!/^\d{10,16}$/.test(exp) || !nonce || !sig) return false;
   if (!safeEqual(sig, mac(`${exp}.${nonce}`, k))) return false;
   return Number(exp) > now;
-}
-
-/** Constant-time; an unset ADMIN_PASSWORD never matches anything. */
-export function checkPassword(input: string): boolean {
-  return safeEqual(input, process.env["ADMIN_PASSWORD"] ?? "");
 }
 
 // --- owner-app actions (Acknowledge / Not received from a notification) ---------------

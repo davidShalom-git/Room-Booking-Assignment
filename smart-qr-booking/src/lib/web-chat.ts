@@ -13,26 +13,12 @@ import { loadConv, saveConv } from "@/lib/bot/conversation";
 import { prismaPorts } from "@/lib/bot/ports-prisma";
 import type { InEvent, Out, Ports, Row } from "@/lib/bot/types";
 import { deliver } from "@/lib/deliver";
+import { hit } from "@/lib/rate-limit";
 
 const HOUR_MS = 3_600_000;
 
 export const newChatKey = () => `web:${randomBytes(16).toString("base64url")}`;
 export const isChatKey = (k: string | null | undefined): k is string => !!k && /^web:[A-Za-z0-9_-]{22}$/.test(k);
-
-/**
- * Fixed-window counter: true while `key` has been hit at most `limit` times in the window.
- * One statement, so parallel requests can't slip past it.
- */
-export async function hit(key: string, limit: number, windowMs: number, now: Date = new Date()): Promise<boolean> {
-  const since = new Date(now.getTime() - windowMs);
-  const rows = await prisma.$queryRaw<{ count: number }[]>`
-    INSERT INTO "RateLimit" ("key", "windowStart", "count") VALUES (${key}, ${now}, 1)
-    ON CONFLICT ("key") DO UPDATE SET
-      "windowStart" = CASE WHEN "RateLimit"."windowStart" <= ${since} THEN EXCLUDED."windowStart" ELSE "RateLimit"."windowStart" END,
-      "count" = CASE WHEN "RateLimit"."windowStart" <= ${since} THEN 1 ELSE "RateLimit"."count" + 1 END
-    RETURNING "count"`;
-  return Number(rows[0]?.count ?? limit + 1) <= limit;
-}
 
 /**
  * The assistant's ports for a website visitor: at most 3 new holds an hour from one network —

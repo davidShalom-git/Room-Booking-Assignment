@@ -1,0 +1,53 @@
+{
+  "slug": "green-valley",
+  "siteUrl": "https://green-valley.vercel.app",
+  "settings": {
+    "name": "Green Valley Homestay",
+    "tagline": "A quiet farm stay in the hills",
+    "city": "Munnar, Kerala",
+    "address": "Chithirapuram, Munnar, Kerala 685565",
+    "phone": "94470 12345",
+    "email": "",
+    "about": "Four rooms on a working cardamom farm, twenty minutes above Munnar town. Home-cooked meals and a plantation walk every morning.",
+    "directions": "Munnar bus stand is 9 km — we can pick you up.",
+    "amenities": ["Free WiFi", "Home-cooked breakfast", "Plantation walk", "Parking"],
+    "rating": null,
+    "reviews": null,
+    "checkInTime": "12:00",
+    "checkOutTime": "10:00",
+    "advancePercent": 30,
+    "upiId": "greenvalley@okaxis",
+    "upiName": "Green Valley Homestay",
+    "photos": []
+  },
+  "rooms": [
+    {
+      "id": "1",
+      "name": "Garden Room",
+      "type": "Double",
+      "pricePerNight": 2200,
+      "capacity": 2,
+      "bed": "Queen Bed",
+      "ac": false,
+      "size": "18 m²",
+      "floor": 0,
+      "shortDescription": "Opens onto the garden, with a sit-out for morning tea.",
+      "amenities": ["Hot water", "Sit-out"],
+      "images": []
+    },
+    {
+      "id": "2",
+      "name": "Family Room",
+      "type": "Family",
+      "pricePerNight": 3200,
+      "capacity": 4,
+      "bed": "King Bed + 2 Singles",
+      "ac": true,
+      "size": "30 m²",
+      "floor": 1,
+      "shortDescription": "Room for four, with a view over the plantation.",
+      "amenities": ["Hot water", "Balcony"],
+      "images": []
+    }
+  ]
+}

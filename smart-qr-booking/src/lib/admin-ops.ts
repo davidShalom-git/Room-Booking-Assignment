@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import * as engine from "@/lib/engine";
 import * as payments from "@/lib/payments";
 import { normalizePhone, validPhone } from "@/lib/phone";
+import { getSettings } from "@/lib/settings";
+import { isPhotoUrl } from "@/lib/photos";
 import { paymentView, stayView, toView } from "@/lib/bot/ports-prisma";
 import * as C from "@/lib/bot/copy";
 import type { Out } from "@/lib/bot/types";
@@ -55,7 +57,7 @@ export async function acknowledgeAsAdmin(paymentId: string, amountRaw?: string):
   }
   if (r.value.already) return { ok: true, message: `${ref} is already acknowledged.` };
   const stay = r.value.kind === "EXTENSION" ? await engine.stayOf(r.value.bookingId) : null;
-  await tellGuest(r.value.booking, C.acknowledgedToGuest(paymentView(r.value), stay ? stayView(stay) : null));
+  await tellGuest(r.value.booking, C.acknowledgedToGuest(await getSettings(), paymentView(r.value), stay ? stayView(stay) : null));
   return { ok: true, message: `Acknowledged ${formatINR(r.value.amount)} for ${ref}. The booking is confirmed.` };
 }
 
@@ -94,7 +96,7 @@ export async function confirmAdvance(id: string, amountRaw?: string): Promise<Op
     if (r.code === "SUPERSEDED") return fail(`${r.message} Nothing was confirmed — refund ${before.guestName} if their money arrived.`);
     return fail(r.message);
   }
-  await tellGuest(r.value, C.bookingConfirmed(toView(r.value)));
+  await tellGuest(r.value, C.bookingConfirmed(await getSettings(), toView(r.value)));
   return { ok: true, message: `Confirmed ${ref} — ${formatINR(r.value.advancePaid)} recorded.` };
 }
 
@@ -115,7 +117,7 @@ export async function cancelAsAdmin(id: string): Promise<OpResult> {
   if (!r.ok) return fail(r.message);
   if (wasActive) {
     const v = toView(r.value);
-    await tellGuest(b, b.status === "CONFIRMED" ? C.bookingCancelledByDesk(v) : C.holdCancelledByDesk(v));
+    await tellGuest(b, b.status === "CONFIRMED" ? C.bookingCancelledByDesk(await getSettings(), v) : C.holdCancelledByDesk(v));
   }
   return { ok: true, message: `Cancelled ${ref}. Room ${b.roomId} is free for those dates again.` };
 }
@@ -187,14 +189,6 @@ export async function createWalkIn(input: Record<string, string | undefined>): P
 
 const lines = (s: string) => s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
 
-function httpsUrl(s: string): boolean {
-  try {
-    return new URL(s).protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 /** Create (no existingId) or edit a room. Price changes never touch existing bookings. */
 export async function saveRoom(input: Record<string, string | undefined>, existingId?: string): Promise<OpResult> {
   const id = existingId ?? text(input, "id");
@@ -231,9 +225,9 @@ export async function saveRoom(input: Record<string, string | undefined>, existi
   const amenities = String(input["amenities"] ?? "").split(/[\n,]/).map((a) => a.trim()).filter(Boolean);
   if (amenities.length > 40 || amenities.some((a) => a.length > 40)) return fail("Up to 40 amenities, each under 40 characters.", "amenities");
   const images = lines(String(input["images"] ?? ""));
-  if (images.length === 0) return fail("Add at least one photo URL.", "images");
+  if (images.length === 0) return fail("Add at least one photo.", "images");
   if (images.length > 12) return fail("Up to 12 photos.", "images");
-  if (!images.every(httpsUrl)) return fail("Photo URLs must start with https://", "images");
+  if (!images.every(isPhotoUrl)) return fail("Photos must be uploaded here or be https:// links.", "images");
 
   const data = {
     name,

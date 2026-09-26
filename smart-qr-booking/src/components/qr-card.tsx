@@ -1,5 +1,5 @@
 type Room = { id: string; name: string; pricePerNight: number; capacity: number };
-import { config, roomUrl } from "@/config";
+import { roomUrl } from "@/config";
 import { formatINR } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
 
@@ -11,9 +11,11 @@ export function QrCard({
   room,
   svg,
   png,
+  propertyName,
   compact = false,
 }: {
   room: Room;
+  propertyName: string;
   svg: string;
   png: string;
   compact?: boolean;
@@ -53,7 +55,7 @@ export function QrCard({
         </a>
         <a
           href={png}
-          download={`${room.id}-${config.property.name.toLowerCase().replace(/\s+/g, "-")}-qr.png`}
+          download={`${room.id}-${propertyName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-qr.png`}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-ink px-3 py-2 text-[12px] font-medium text-cream transition-transform hover:scale-[1.02]"
         >
           <Icon.download width={13} height={13} />

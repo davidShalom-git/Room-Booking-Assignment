@@ -1,14 +1,14 @@
-/** The owner app's icon, drawn at build time: the property's initial on the brand's dark ink. */
+/** The owner app's icon: the property's initial on the brand's dark ink (cached for a day). */
 import { ImageResponse } from "next/og";
-import { config } from "@/config";
+import { getSettings } from "@/lib/settings";
 
 const SIZES = ["96", "192", "512"];
-export const dynamicParams = false;
-export const generateStaticParams = () => SIZES.map((size) => ({ size }));
 
 export async function GET(_request: Request, { params }: { params: Promise<{ size: string }> }) {
-  const size = Number((await params).size);
-  const initial = config.property.name.replace(/^the\s+/i, "").charAt(0).toUpperCase();
+  const raw = (await params).size;
+  if (!SIZES.includes(raw)) return new Response("Not found", { status: 404 });
+  const size = Number(raw);
+  const initial = (await getSettings()).name.replace(/^the\s+/i, "").charAt(0).toUpperCase();
   return new ImageResponse(
     (
       <div
@@ -27,6 +27,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ siz
         {initial}
       </div>
     ),
-    { width: size, height: size },
+    { width: size, height: size, headers: { "cache-control": "public, max-age=86400" } },
   );
 }

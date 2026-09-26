@@ -1,19 +1,21 @@
-/** Everything the assistant says, and the owner's notification texts. Plain functions; *bold* markup only. */
+/**
+ * Everything the assistant says, and the owner's notification texts. Plain functions; *bold* markup
+ * only. Anything about the property itself (name, phone, times, advance, UPI) comes from `s`, the
+ * owner's settings.
+ */
 import { config } from "@/config";
+import { phonePretty } from "@/lib/phone";
+import type { Settings } from "@/lib/settings";
 import { istTime } from "@/lib/dates";
 import { formatDate, formatDateTime, formatINR, formatTime } from "@/lib/pricing";
 import type { BookingView, PaymentView, RoomInfo, StayView } from "./types";
 
 export const firstName = (n: string) => n.trim().split(/\s+/)[0] || "there";
 export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-/** "919876543210" -> "+91 98765 43210" (Indian mobiles); other numbers as "+<digits>". */
-export const phonePretty = (digits: string) =>
-  /^91[6-9]\d{9}$/.test(digits) ? `+91 ${digits.slice(2, 7)} ${digits.slice(7)}` : `+${digits}`;
 
 const inAt = (b: BookingView) => formatDateTime(b.checkIn, b.checkInTime);
 const outAt = (b: BookingView) => formatDateTime(b.checkOut, b.checkOutTime);
-export const advanceOf = (total: number) => Math.round(total * config.advanceRate);
-const pct = () => Math.round(config.advanceRate * 100);
+export const advanceOf = (total: number, s: Pick<Settings, "advancePercent">) => Math.round((total * s.advancePercent) / 100);
 const holdUntil = (b: BookingView) => (b.holdExpiresAt ? formatTime(istTime(new Date(b.holdExpiresAt))) : "shortly");
 
 export const roomTitle = (r: Pick<RoomInfo, "id" | "name">) => `*Room ${r.id} — ${r.name}*`;
@@ -24,11 +26,11 @@ export const payUrl = (b: Pick<BookingView, "id">) => `${config.baseUrl}/pay/${b
 
 // --- guest: browsing ------------------------------------------------------
 
-export const welcome = () =>
-  `Hi! 👋 Welcome to ${config.property.name}. Which room would you like to know about or book?`;
+export const welcome = (s: Settings) =>
+  `Hi! 👋 Welcome to ${s.name}. Which room would you like to know about or book?`;
 
-export const intro = (r: RoomInfo) =>
-  `Hi! 👋 Welcome to ${config.property.name}.\nYou're asking about ${roomTitle(r)} (${roomFacts(r)}).\nAsk me anything, or book right here.`;
+export const intro = (s: Settings, r: RoomInfo) =>
+  `Hi! 👋 Welcome to ${s.name}.\nYou're asking about ${roomTitle(r)} (${roomFacts(r)}).\nAsk me anything, or book right here.`;
 
 export const details = (r: RoomInfo) =>
   [
@@ -40,18 +42,23 @@ export const details = (r: RoomInfo) =>
     `Amenities: ${r.amenities.slice(0, 6).join(", ")}…`,
   ].join("\n");
 
-export const priceText = (r: RoomInfo) =>
-  `Room ${r.id} is ${formatINR(r.pricePerNight)} per night. Breakfast and WiFi included.`;
+export const priceText = (r: RoomInfo) => `Room ${r.id} is ${formatINR(r.pricePerNight)} per night.`;
 
-export const breakfast = () => "Complimentary breakfast is on the rooftop, 7:30–10:00 AM.";
+/** From the property's amenities, so it never promises what the place doesn't offer. */
+export const breakfast = (s: Settings) => {
+  const b = s.amenities.find((a) => /breakfast/i.test(a));
+  return b
+    ? `Yes — ${b.charAt(0).toLowerCase()}${b.slice(1)}. The front desk can tell you the timings.`
+    : `Breakfast isn't included here, but the front desk (${phonePretty(s.phone)}) can point you to good places nearby.`;
+};
 
 export const menu = (r: RoomInfo) =>
   `I can tell you about Room ${r.id}, check availability, or take your booking. What would you like?`;
 
 export const thanks = () => "You're welcome! See you soon 🌴";
 
-export const handoff = () =>
-  `You can call the front desk on ${config.property.phone} — or leave your number here and they'll call you back.`;
+export const handoff = (s: Settings) =>
+  `You can call the front desk on ${phonePretty(s.phone)} — or leave your number here and they'll call you back.`;
 
 export const ownerHandoff = (b: { room?: RoomInfo | null; phone?: string }) =>
   `💬 A guest in the website chat would like to talk to the front desk${b.room ? ` about Room ${b.room.id}` : ""}.\n${b.phone ? `Call them: ${phonePretty(b.phone)}` : "They haven't left a number yet."}`;
@@ -96,6 +103,7 @@ export const nothingFree = (r: RoomInfo, checkIn: string, checkOut: string) =>
 export const justTaken = (r: RoomInfo) => `Oh no — Room ${r.id} was just taken by someone else.`;
 
 export const review = (
+  s: Settings,
   r: RoomInfo,
   d: { name: string; phone: string; checkIn: string; nights: number; checkOut: string; guests: number },
 ) =>
@@ -105,28 +113,28 @@ export const review = (
     roomTitle(r),
     `Name: ${d.name}`,
     `Phone: ${phonePretty(d.phone)}`,
-    `Check-in: ${formatDateTime(d.checkIn, config.defaults.checkInTime)}`,
-    `Check-out: ${formatDateTime(d.checkOut, config.defaults.checkOutTime)}`,
+    `Check-in: ${formatDateTime(d.checkIn, s.checkInTime)}`,
+    `Check-out: ${formatDateTime(d.checkOut, s.checkOutTime)}`,
     `Duration: ${plural(d.nights, "night")}`,
     `Guests: ${d.guests}`,
-    `Total: ${formatINR(r.pricePerNight * d.nights)} · ${pct()}% advance to confirm: ${formatINR(advanceOf(r.pricePerNight * d.nights))}`,
+    `Total: ${formatINR(r.pricePerNight * d.nights)} · ${s.advancePercent}% advance to confirm: ${formatINR(advanceOf(r.pricePerNight * d.nights, s))}`,
   ].join("\n");
 
 // --- guest: paying ---------------------------------------------------------
 
-export function paymentRequest(b: BookingView, upi: { upiId: string; upiName: string }, amount: number): string {
+export function paymentRequest(s: Settings, b: BookingView, amount: number): string {
   const isExtension = b.parentId !== null;
   return [
     isExtension
       ? `Room ${b.roomId} is held for your extra nights until ${holdUntil(b)}. Extensions are paid in full.`
-      : `Almost there — Room ${b.roomId} is held for you until ${holdUntil(b)} with a ${pct()}% advance. Balance at check-in.`,
+      : `Almost there — Room ${b.roomId} is held for you until ${holdUntil(b)} with a ${s.advancePercent}% advance. Balance at check-in.`,
     ``,
     `Total: ${formatINR(b.total)}`,
     `Pay now: ${formatINR(amount)}`,
     ...(isExtension ? [] : [`Balance at check-in: ${formatINR(b.total - amount)}`]),
     ``,
-    upi.upiId
-      ? `Pay by UPI to *${upi.upiId}* (${upi.upiName}). Tap to open your UPI app:\n${payUrl(b)}`
+    s.upiId
+      ? `Pay by UPI to *${s.upiId}* (${s.upiName}). Tap to open your UPI app:\n${payUrl(b)}`
       : `The front desk will send you payment details here shortly.`,
     ``,
     `Once paid, tap *I've paid* and send the UPI reference (UTR). Ref: ${b.ref}`,
@@ -156,9 +164,9 @@ export const alreadyHolding = (b: BookingView, amount: number) =>
 export const holdExpired = (b: BookingView) =>
   `Your hold on Room ${b.roomId} expired before the payment came through, so the room has been released. Would you like to start again?`;
 
-export const bookingConfirmed = (b: BookingView) =>
+export const bookingConfirmed = (s: Settings, b: BookingView) =>
   [
-    `✅ *Booking confirmed* — ${config.property.name}`,
+    `✅ *Booking confirmed* — ${s.name}`,
     ``,
     `Booking ID: ${b.ref}`,
     `Room: ${b.roomName} — ${b.roomId}`,
@@ -169,14 +177,14 @@ export const bookingConfirmed = (b: BookingView) =>
     `Guests: ${b.guests}`,
     `Total: ${formatINR(b.total)}  ·  Paid: ${formatINR(b.advancePaid)}  ·  Due at check-in: ${formatINR(b.total - b.advancePaid)}`,
     ``,
-    `${config.property.address}. See you soon! 🌴`,
+    `${s.address}. See you soon! 🌴`,
   ].join("\n");
 
 export const holdCancelledByDesk = (b: BookingView) =>
   `Sorry — the front desk couldn't hold Room ${b.roomId} for ${formatDate(b.checkIn)} → ${formatDate(b.checkOut)}, so your request (${b.ref}) has been cancelled. Ask here for other dates.`;
 
-export const bookingCancelledByDesk = (b: BookingView) =>
-  `Your booking ${b.ref} (Room ${b.roomId}, ${formatDate(b.checkIn)} → ${formatDate(b.checkOut)}) has been cancelled by the front desk. If that's unexpected, reply here or call ${config.property.phone}.`;
+export const bookingCancelledByDesk = (s: Settings, b: BookingView) =>
+  `Your booking ${b.ref} (Room ${b.roomId}, ${formatDate(b.checkIn)} → ${formatDate(b.checkOut)}) has been cancelled by the front desk. If that's unexpected, reply here or call ${phonePretty(s.phone)}.`;
 
 export const myBookings = (list: BookingView[]) =>
   [
@@ -233,12 +241,21 @@ export const extensionConfirmed = (seg: BookingView, fromRoomId: string | null) 
     : `✅ *You're extended* — Room ${seg.roomId} until ${outAt(seg)}. Paid: ${formatINR(seg.advancePaid)}. Enjoy the extra nights! 🌴`;
 
 /** What the guest hears when the owner acknowledges their payment. */
-export function acknowledgedToGuest(p: PaymentView, stay: StayView | null): string {
+export function acknowledgedToGuest(s: Settings, p: PaymentView, stay: StayView | null): string {
   const b = p.booking;
-  if (p.kind !== "EXTENSION") return bookingConfirmed(b);
+  if (p.kind !== "EXTENSION") return bookingConfirmed(s, b);
   const prev = stay ? [stay.root, ...stay.segments].find((x) => x.id !== b.id && x.checkOut === b.checkIn) : null;
   return extensionConfirmed(b, prev?.roomId ?? null);
 }
+
+/**
+ * The confirmation as a wa.me link: the owner taps it and sends it from their own WhatsApp — the
+ * guest gets it where they'll see it, and no WhatsApp API or setup is involved.
+ */
+export const whatsappConfirmation = (s: Settings, b: BookingView) =>
+  `https://wa.me/${b.guestPhone}?text=${encodeURIComponent(
+    `Hi ${firstName(b.guestName)} 👋\n\n${b.parentId ? extensionConfirmed(b, null) : bookingConfirmed(s, b)}\n\nYour booking: ${payUrl(b)}`,
+  )}`;
 
 export const notYourBooking = () => "I couldn't find that booking in this chat.";
 export const staleButton = () => "That option is out of date — pick one from the latest message, or type *menu*.";

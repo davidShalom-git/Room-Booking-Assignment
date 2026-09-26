@@ -1,6 +1,6 @@
 import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { signSession, verifySession, checkPassword, SESSION_MAX_AGE } from "../src/lib/session";
+import { signSession, verifySession, SESSION_MAX_AGE } from "../src/lib/session";
 import { cronAuthorized } from "../src/lib/secure";
 
 const SECRET = "a-long-enough-session-secret-for-tests";
@@ -62,20 +62,5 @@ describe("cron calls", () => {
     delete process.env["CRON_SECRET"];
     assert.equal(cronAuthorized(req("Bearer ")), false);
     assert.equal(cronAuthorized(req("Bearer undefined")), false);
-  });
-});
-
-describe("password", () => {
-  test("only the exact password passes", () => {
-    assert.equal(checkPassword("correct horse"), true);
-    assert.equal(checkPassword("correct horse "), false);
-    assert.equal(checkPassword("Correct horse"), false);
-    assert.equal(checkPassword(""), false);
-  });
-
-  test("an unset password never lets anyone in", () => {
-    delete process.env["ADMIN_PASSWORD"];
-    assert.equal(checkPassword(""), false);
-    assert.equal(checkPassword("anything"), false);
   });
 });

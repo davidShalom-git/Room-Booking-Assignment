@@ -6,8 +6,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { config } from "@/config";
-import { env } from "@/lib/env";
+import { siteSettings } from "@/lib/site-settings";
+import { phonePretty } from "@/lib/phone";
 import { bookingRef, getBooking } from "@/lib/engine";
 import { openPayment } from "@/lib/payments";
 import { payState } from "@/lib/pay-page";
@@ -27,14 +27,15 @@ export default async function PayPage({ params }: { params: Promise<{ bookingId:
   const b = /^[a-z0-9_]{10,40}$/i.test(bookingId) ? await getBooking(bookingId) : null;
   if (!b) notFound();
 
+  const s = await siteSettings();
   const ref = bookingRef(b);
   const owed = await openPayment(b.id);
   const isExtension = b.parentId !== null;
-  const amount = owed?.amount ?? (isExtension ? b.total : Math.round(b.total * config.advanceRate));
+  const amount = owed?.amount ?? (isExtension ? b.total : Math.round((b.total * s.advancePercent) / 100));
   const state = payState(b, owed);
   const payable = state === "pay";
-  const upiId = env.upiId;
-  const link = upiId && payable ? upiPayLink({ upiId, name: env.upiPayeeName, amount, note: ref }) : null;
+  const upiId = s.upiId;
+  const link = upiId && payable ? upiPayLink({ upiId, name: s.upiName, amount, note: ref }) : null;
   const qr = link ? await qrSvg(link) : null;
   const row = "flex justify-between gap-4 py-1.5";
   const title =
@@ -49,7 +50,7 @@ export default async function PayPage({ params }: { params: Promise<{ bookingId:
   return (
     <div className="px-4 pt-28">
       <div className="mx-auto max-w-md">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-faint">{config.property.name}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-faint">{s.name}</p>
         <h1 className="font-display mt-2 text-3xl leading-tight text-ink">{title}</h1>
 
         <div className="mt-6 rounded-[1.5rem] border border-hairline bg-paper p-1.5">
@@ -83,7 +84,7 @@ export default async function PayPage({ params }: { params: Promise<{ bookingId:
               ) : (
                 <>
                   <div className={row}>
-                    <dt>{isExtension ? "Pay now (in full)" : `Advance (${Math.round(config.advanceRate * 100)}%)`}</dt>
+                    <dt>{isExtension ? "Pay now (in full)" : `Advance (${Math.round((amount / b.total) * 100)}%)`}</dt>
                     <dd className="font-display text-xl text-ink">{formatINR(amount)}</dd>
                   </div>
                   {!isExtension && (
@@ -123,7 +124,7 @@ export default async function PayPage({ params }: { params: Promise<{ bookingId:
                   <div className="min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">UPI ID</p>
                     <p className="truncate font-medium text-ink">{upiId}</p>
-                    <p className="text-[12px] text-faint">{env.upiPayeeName}</p>
+                    <p className="text-[12px] text-faint">{s.upiName}</p>
                   </div>
                   <CopyButton text={upiId} />
                 </div>
@@ -158,7 +159,7 @@ export default async function PayPage({ params }: { params: Promise<{ bookingId:
         {state === "none" && b.status === "CANCELLED" && (
           <p className="mt-5 rounded-2xl border border-clay/30 bg-clay-soft px-4 py-3 text-[13px] text-clay-dark">
             This booking is no longer on hold. If you&apos;ve already paid, tell us in the chat (reference {ref}) or call{" "}
-            {config.property.phone}, and we&apos;ll sort it out straight away.
+            {phonePretty(s.phone)}, and we&apos;ll sort it out straight away.
           </p>
         )}
 

@@ -5,7 +5,7 @@ import { istDate } from "@/lib/dates";
 import { formatDate, formatINR } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
 import { one } from "@/components/admin/field";
-import { phonePretty } from "@/lib/bot/copy";
+import { phonePretty } from "@/lib/phone";
 
 export const metadata = { title: "Customers" };
 

@@ -15,6 +15,7 @@
 import { prisma } from "@/lib/db";
 import type { Booking, Customer, Prisma, Room } from "@/generated/prisma/client";
 import { config } from "@/config";
+import { getSettings } from "@/lib/settings";
 import { env } from "@/lib/env";
 import { toInstant, istDate, istTime } from "@/lib/dates";
 import { nights as nightsBetween, makeBookingId, addDays } from "@/lib/pricing";
@@ -267,7 +268,7 @@ export type CreateInput = {
   /** YYYY-MM-DD, property time. */
   checkIn: string;
   checkOut: string;
-  /** HH:mm, property time. Defaults from config. */
+  /** HH:mm, property time. Defaults from the settings. */
   checkInTime?: string;
   checkOutTime?: string;
   status: "PENDING" | "CONFIRMED";
@@ -296,8 +297,9 @@ export async function createBooking(i: CreateInput): Promise<Result<BookingRow>>
   if (!Number.isInteger(i.guests) || i.guests < 1) return bad("INVALID", "At least one guest is needed.");
 
   if (!DATE_RE.test(i.checkIn) || !DATE_RE.test(i.checkOut)) return bad("INVALID", "Those dates don't look right.");
-  const inAt = toInstant(i.checkIn, i.checkInTime ?? config.defaults.checkInTime);
-  const outAt = toInstant(i.checkOut, i.checkOutTime ?? config.defaults.checkOutTime);
+  const settings = await getSettings();
+  const inAt = toInstant(i.checkIn, i.checkInTime ?? settings.checkInTime);
+  const outAt = toInstant(i.checkOut, i.checkOutTime ?? settings.checkOutTime);
   if (
     Number.isNaN(inAt.getTime()) ||
     Number.isNaN(outAt.getTime()) ||
@@ -322,7 +324,7 @@ export async function createBooking(i: CreateInput): Promise<Result<BookingRow>>
   const customer = await ensureCustomer(phone, i.parentId ? "" : name);
   const total = room.pricePerNight * n;
   const paid = i.status === "CONFIRMED" ? Math.max(0, Math.min(total, Math.round(i.advancePaid ?? 0))) : 0;
-  const owed = i.parentId ? total : Math.round(total * config.advanceRate);
+  const owed = i.parentId ? total : Math.round((total * settings.advancePercent) / 100);
   const payment =
     i.status === "PENDING"
       ? { kind: i.parentId ? ("EXTENSION" as const) : ("ADVANCE" as const), amount: owed, status: "AWAITING" as const }
@@ -431,7 +433,7 @@ export async function extensionOptions(
   if (nightsBetween(istDate(stay.root.checkInAt), newCheckOut) > config.defaults.maxNights) {
     return bad("INVALID", `Stays are limited to ${config.defaults.maxNights} nights.`);
   }
-  const free = await freeRooms(stay.end.checkOutAt, toInstant(newCheckOut, config.defaults.checkOutTime), {
+  const free = await freeRooms(stay.end.checkOutAt, toInstant(newCheckOut, (await getSettings()).checkOutTime), {
     minCapacity: stay.root.guests,
     now,
   });

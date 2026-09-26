@@ -1,7 +1,8 @@
 /**
  * Owner app service worker (scope /admin/): shows push notifications, and handles
  * Acknowledge / Not received right from the notification (POST /api/owner/act with the
- * notification's signed token); the guest is told in their chat.
+ * notification's signed token); the guest is told in their chat. After Acknowledge, the "Done"
+ * notification opens WhatsApp with the confirmation ready to send from the owner's own number.
  */
 const ICON = "/owner-icon/192";
 const HOME = "/admin/today";
@@ -52,14 +53,17 @@ async function act(action, token) {
   } catch {
     r = { ok: false, error: "No internet connection — open the app to try again." };
   }
+  const wa = r.ok && typeof r.whatsapp === "string" && r.whatsapp.startsWith("https://wa.me/") ? r.whatsapp : null;
   return self.registration.showNotification(r.ok ? "✅ Done" : "⚠️ Couldn't do that", {
-    body: r.ok ? r.message : r.error,
+    body: r.ok ? (wa ? `${r.message}\nTap to send the guest the confirmation on WhatsApp.` : r.message) : r.error,
     icon: ICON,
-    data: { url: HOME },
+    actions: wa ? [{ action: "wa", title: "Send on WhatsApp" }] : [],
+    data: { url: wa || HOME },
   });
 }
 
 async function open(url) {
+  if (!url.startsWith("/")) return self.clients.openWindow(url); // WhatsApp: leave the app window alone
   const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   for (const w of windows) {
     if (new URL(w.url).pathname.startsWith("/admin")) {

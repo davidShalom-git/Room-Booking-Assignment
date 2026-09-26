@@ -1,7 +1,6 @@
 /** The assistant's Ports, backed by the booking engine and payment ledger (Postgres). */
 import { prisma } from "@/lib/db";
-import { config } from "@/config";
-import { env } from "@/lib/env";
+import { getSettings, type Settings } from "@/lib/settings";
 import { istDate, istTime, toInstant } from "@/lib/dates";
 import * as engine from "@/lib/engine";
 import * as payments from "@/lib/payments";
@@ -58,18 +57,19 @@ function map<A, B>(r: Result<A>, f: (a: A) => B): PortResult<B> {
 /** `clock` lets tests control "now"; production omits it. */
 export function prismaPorts(clock?: { now: Date }): Ports {
   const now = () => clock?.now ?? new Date();
-  const range = (checkIn: string, checkOut: string) => ({
-    from: toInstant(checkIn, config.defaults.checkInTime),
-    to: toInstant(checkOut, config.defaults.checkOutTime),
-  });
+  // Read once per set of ports (one chat message, one cron run).
+  let settings: Promise<Settings> | undefined;
+  const loadSettings = () => (settings ??= getSettings());
 
   return {
-    settings: { upiId: env.upiId, upiName: env.upiPayeeName },
+    settings: loadSettings,
     now,
     rooms: () => prisma.room.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     room: (id) => prisma.room.findFirst({ where: { id, active: true } }),
-    freeRooms: (checkIn, checkOut, minCapacity, excludeRoomId) => {
-      const { from, to } = range(checkIn, checkOut);
+    freeRooms: async (checkIn, checkOut, minCapacity, excludeRoomId) => {
+      const s = await loadSettings();
+      const from = toInstant(checkIn, s.checkInTime);
+      const to = toInstant(checkOut, s.checkOutTime);
       return engine.freeRooms(from, to, { minCapacity, excludeRoomId, now: now() });
     },
     createHold: async (i) => map(await engine.createBooking({ ...i, status: "PENDING", source: "WEB", now: now() }), toView),

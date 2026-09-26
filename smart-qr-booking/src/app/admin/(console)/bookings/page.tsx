@@ -6,8 +6,9 @@ import { formatDate, formatINR, formatTime } from "@/lib/pricing";
 import { StatusBadge } from "@/components/status-badge";
 import { Icon } from "@/components/icons";
 import { BookingActions } from "@/components/admin/booking-actions";
+import { siteSettings } from "@/lib/site-settings";
 import { Flash, one } from "@/components/admin/field";
-import { phonePretty } from "@/lib/bot/copy";
+import { phonePretty } from "@/lib/phone";
 
 export const metadata = { title: "Bookings" };
 
@@ -32,6 +33,7 @@ export default async function BookingsPage({
 }) {
   await requireAdmin();
   const sp = await searchParams;
+  const s = await siteSettings();
   const f = {
     when: one(sp.when) ?? "upcoming",
     status: one(sp.status) ?? "all",
@@ -171,7 +173,7 @@ export default async function BookingsPage({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <BookingActions booking={b} back={back} path="/admin/bookings" />
+                    <BookingActions booking={b} back={back} path="/admin/bookings" settings={s} />
                   </td>
                 </tr>
               ))}

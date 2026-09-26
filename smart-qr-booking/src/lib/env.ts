@@ -12,11 +12,8 @@ function need(name: string): string {
 const opt = (name: string): string => process.env[name] ?? "";
 
 export const env = {
-  get adminPassword() { return need("ADMIN_PASSWORD"); },
   get sessionSecret() { return need("SESSION_SECRET"); },
 
-  get upiId() { return opt("UPI_ID"); },
-  get upiPayeeName() { return opt("UPI_PAYEE_NAME") || "The Coral Courtyard"; },
   get holdMinutes(): number {
     const n = Number(opt("HOLD_MINUTES"));
     return Number.isFinite(n) && n > 0 ? n : 120;

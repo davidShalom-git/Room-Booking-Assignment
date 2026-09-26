@@ -11,15 +11,21 @@ export function RoomCard({ room, priority = false }: { room: RoomWithStatus; pri
       href={`/rooms/${room.id}`}
       className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-hairline bg-paper p-1.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[1.4rem]">
-        <Image
-          src={room.images[0]}
-          alt={room.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          priority={priority}
-          className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.04]"
-        />
+      <div className="relative aspect-[4/3] overflow-hidden rounded-[1.4rem] bg-sand">
+        {room.images[0] ? (
+          <Image
+            src={room.images[0]}
+            alt={room.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            priority={priority}
+            className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.04]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-faint">
+            <Icon.bed width={28} height={28} />
+          </div>
+        )}
         <div className="absolute left-3 top-3">
           <StatusBadge status={room.status} label={tonightLabel(room.status)} />
         </div>

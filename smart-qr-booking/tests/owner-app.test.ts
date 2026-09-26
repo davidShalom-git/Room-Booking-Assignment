@@ -123,6 +123,22 @@ describe("acting from the notification", () => {
     assert.match((await chatMessages(GUEST)).at(-1)!.text, /Booking confirmed/);
   });
 
+  test("Acknowledge also offers the confirmation for the owner to send from their own WhatsApp", async () => {
+    const h = ok(await hold());
+    const p = ok(await claimPayment(h.id, "412345678901", NOW));
+    const r = await ownerAct(signOwnerAction(p.id), "ack");
+    assert.ok(r.ok && r.whatsapp);
+    const url = new URL(r.whatsapp);
+    assert.equal(`${url.origin}${url.pathname}`, `https://wa.me/${GUEST_PHONE}`);
+    const text = url.searchParams.get("text")!;
+    assert.match(text, /^Hi Asha 👋/);
+    assert.match(text, /Booking confirmed\* — The Coral Courtyard/);
+    assert.match(text, /Check-in: 20 Oct 2026, 1:00 PM/);
+    assert.match(text, /Paid: ₹1,800/);
+    assert.match(text, new RegExp(`/pay/${h.id}`));
+    assert.equal((await ownerAct(signOwnerAction(p.id), "nack")).ok, false, "already acknowledged");
+  });
+
   test("Not received sends it back to the guest; a forged or expired token does nothing", async () => {
     const h = ok(await hold());
     const p = ok(await claimPayment(h.id, "412345678901", NOW));

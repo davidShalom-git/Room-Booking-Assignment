@@ -7,7 +7,7 @@ import { StatCard } from "@/components/stat-card";
 import { PaymentDecision } from "@/components/admin/booking-actions";
 import { OwnerAlerts } from "@/components/admin/owner-alerts";
 import { Flash, one } from "@/components/admin/field";
-import { phonePretty } from "@/lib/bot/copy";
+import { phonePretty } from "@/lib/phone";
 
 export const metadata = { title: "Today" };
 

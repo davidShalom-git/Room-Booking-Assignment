@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { config } from "@/config";
 import { logout } from "@/app/admin/actions";
 import { Icon, type IconName } from "@/components/icons";
 
@@ -15,9 +14,10 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/admin/rooms", label: "Rooms", icon: "grid" },
   { href: "/admin/qr", label: "QR Codes", icon: "qr" },
   { href: "/admin/import", label: "Import", icon: "download" },
+  { href: "/admin/settings", label: "Settings", icon: "sliders" },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ name, children }: { name: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const active = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -28,7 +28,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <aside className="border-b border-hairline bg-paper md:w-60 md:shrink-0 md:border-b-0 md:border-r">
         <div className="flex items-center justify-between px-5 py-4 md:block md:py-6">
           <div>
-            <p className="font-display text-[15px] text-ink">{config.property.name}</p>
+            <p className="font-display text-[15px] text-ink">{name}</p>
             <p className="text-[11px] uppercase tracking-[0.16em] text-faint">Owner console</p>
           </div>
           <form action={logout} className="md:hidden">

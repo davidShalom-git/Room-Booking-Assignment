@@ -168,3 +168,28 @@ model RateLimit {
   windowStart DateTime @db.Timestamptz(3)
   count       Int
 }
+
+/// The property's details (name, contact, times, advance %, UPI, photos), edited by the owner at
+/// /admin/settings. One row (id 1); missing fields fall back to lib/settings.ts DEFAULT_SETTINGS.
+model Settings {
+  id        Int      @id @default(1)
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+/// The owner's console password and recovery code, hashed. One row (id 1); without it the
+/// console uses ADMIN_PASSWORD from the environment. Sessions issued before `changedAt` are void.
+model OwnerLogin {
+  id           Int      @id @default(1)
+  passwordHash String
+  recoveryHash String?
+  changedAt    DateTime @db.Timestamptz(3)
+}
+
+/// A photo uploaded from the owner console (resized on the phone), served at /photos/<id>.
+model Photo {
+  id        String   @id @default(cuid())
+  type      String
+  data      Bytes
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}

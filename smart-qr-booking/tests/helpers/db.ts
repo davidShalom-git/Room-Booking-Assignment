@@ -3,7 +3,7 @@ import { prisma } from "../../src/lib/db";
 /** Empty every table (and restart the booking sequence) between tests. */
 export async function resetDb(): Promise<void> {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE "Payment", "Booking", "Customer", "Conversation", "ChatMessage", "PushSubscription", "RateLimit", "Room" RESTART IDENTITY CASCADE`,
+    `TRUNCATE TABLE "Payment", "Booking", "Customer", "Conversation", "ChatMessage", "PushSubscription", "RateLimit", "Room", "Settings", "OwnerLogin", "Photo" RESTART IDENTITY CASCADE`,
   );
 }
 

@@ -1,6 +1,7 @@
-import { config } from "@/config";
 import { ackPaymentAction, balanceAction, cancelAction, markPaidAction, rejectPaymentAction } from "@/app/admin/actions";
 import type { AdminBooking } from "@/lib/admin-data";
+import type { Settings } from "@/lib/settings";
+import { whatsappConfirmation } from "@/lib/bot/copy";
 import { formatDate, formatINR, todayISO } from "@/lib/pricing";
 import { SubmitButton } from "./submit-button";
 
@@ -39,7 +40,17 @@ export function PaymentDecision({ paymentId, utr, amount, back = "", path }: { p
 }
 
 /** Row actions. `back` + `path` bring the owner back to the same view. */
-export function BookingActions({ booking: b, back = "", path }: { booking: AdminBooking; back?: string; path: string }) {
+export function BookingActions({
+  booking: b,
+  back = "",
+  path,
+  settings,
+}: {
+  booking: AdminBooking;
+  back?: string;
+  path: string;
+  settings: Settings;
+}) {
   const hidden = (
     <>
       <input type="hidden" name="id" value={b.id} />
@@ -67,7 +78,7 @@ export function BookingActions({ booking: b, back = "", path }: { booking: Admin
           name="amount"
           inputMode="numeric"
           pattern="[0-9]*"
-          defaultValue={b.openPayment?.amount ?? (b.parentId ? b.total : Math.round(b.total * config.advanceRate))}
+          defaultValue={b.openPayment?.amount ?? (b.parentId ? b.total : Math.round((b.total * settings.advancePercent) / 100))}
           className="w-16 bg-transparent px-1 py-1.5 text-ink outline-none"
         />
       </label>
@@ -98,6 +109,15 @@ export function BookingActions({ booking: b, back = "", path }: { booking: Admin
     const due = b.total - b.advancePaid;
     return (
       <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={whatsappConfirmation(settings, b)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Opens WhatsApp with the confirmation ready to send"
+          className={pill}
+        >
+          Send on WhatsApp
+        </a>
         {due > 0 && (
           <form action={balanceAction}>
             {hidden}

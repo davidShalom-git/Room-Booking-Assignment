@@ -3,6 +3,7 @@ import { getRooms } from "@/lib/rooms";
 import { config, roomUrl } from "@/config";
 import { qrSvg, qrPng } from "@/lib/qr";
 import { QrCard } from "@/components/qr-card";
+import { siteSettings } from "@/lib/site-settings";
 import { Eyebrow } from "@/components/section-heading";
 import { Reveal } from "@/components/reveal";
 import { Icon } from "@/components/icons";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function QrPage() {
-  const rooms = await getRooms();
+  const [rooms, s] = await Promise.all([getRooms(), siteSettings()]);
   const cards = await Promise.all(
     rooms.map(async (room) => ({
       room,
@@ -50,7 +51,7 @@ export default async function QrPage() {
         <div className="mt-12 grid gap-5 pb-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map(({ room, svg, png }, i) => (
             <Reveal key={room.id} delay={i * 60}>
-              <QrCard room={room} svg={svg} png={png} />
+              <QrCard room={room} svg={svg} png={png} propertyName={s.name} />
             </Reveal>
           ))}
         </div>

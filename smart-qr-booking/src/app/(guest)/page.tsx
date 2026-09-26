@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { config } from "@/config";
-import { PROPERTY_IMAGES } from "@/lib/data";
+import { propertyPhotos } from "@/lib/settings";
+import { siteSettings } from "@/lib/site-settings";
 import { getRooms } from "@/lib/rooms";
 import { Icon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
@@ -9,7 +9,7 @@ import { CtaButton } from "@/components/cta-button";
 import { ChatCta } from "@/components/chat-cta";
 import { RoomCard } from "@/components/room-card";
 import { SectionHeading, Eyebrow } from "@/components/section-heading";
-import { formatINR } from "@/lib/pricing";
+import { formatINR, formatTime } from "@/lib/pricing";
 
 const STEPS = [
   {
@@ -30,11 +30,18 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const rooms = await getRooms();
+  const [rooms, s] = await Promise.all([getRooms(), siteSettings()]);
+  const hero = propertyPhotos(s, rooms)[0];
   const fromPrice = rooms.length ? Math.min(...rooms.map((r) => r.pricePerNight)) : 0;
   const available = [...rooms]
     .sort((a, b) => Number(a.status !== "available") - Number(b.status !== "available"))
     .slice(0, 6);
+  const stats = [
+    ...(s.rating !== null ? [{ label: "Guest rating", value: `${s.rating} / 5`, icon: "star" as const }] : []),
+    { label: "Rooms", value: String(rooms.length), icon: "grid" as const },
+    { label: "From", value: formatINR(fromPrice), icon: "bed" as const },
+    { label: "Check-in", value: formatTime(s.checkInTime), icon: "calendar" as const },
+  ];
 
   return (
     <>
@@ -44,14 +51,7 @@ export default async function HomePage() {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-hairline bg-sand p-1.5">
             <div className="relative overflow-hidden rounded-[2.1rem]">
               <div className="relative h-[70vh] min-h-[480px] w-full bg-[#1c1509]">
-                <Image
-                  src={PROPERTY_IMAGES.hero}
-                  alt={config.property.name}
-                  fill
-                  priority
-                  sizes="100vw"
-                  className="object-cover"
-                />
+                {hero && <Image src={hero} alt={s.name} fill priority sizes="100vw" className="object-cover" />}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#160f06]/95 via-[#160f06]/55 to-[#160f06]/20" />
                 <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#160f06]/80 to-transparent" />
               </div>
@@ -60,16 +60,12 @@ export default async function HomePage() {
                 <div className="max-w-2xl">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
                     <Icon.mapPin width={12} height={12} />
-                    {config.property.city}
+                    {s.city}
                   </span>
                   <h1 className="font-display mt-4 text-[2.6rem] leading-[1.02] text-white sm:text-6xl">
                     Find your perfect stay
                   </h1>
-                  <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-white/85">
-                    {config.property.name} is a {config.property.reviews}-review boutique
-                    property in the old town — {rooms.length} rooms, courtyard light,
-                    rooftop breakfast, and a two-minute walk to the water.
-                  </p>
+                  <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-white/85">{s.about}</p>
                   <div className="mt-7 flex flex-wrap items-center gap-3">
                     <CtaButton href="/rooms" icon="arrowRight">
                       Explore rooms
@@ -82,25 +78,22 @@ export default async function HomePage() {
           </div>
 
           {/* Trust strip */}
-          <div className="mx-auto -mt-10 grid max-w-4xl grid-cols-2 gap-px overflow-hidden rounded-[1.75rem] border border-hairline bg-hairline shadow-[var(--shadow-soft)] sm:grid-cols-4">
-            {(
-              [
-                { label: "Guest rating", value: `${config.property.rating} / 5`, icon: "star" },
-                { label: "Rooms", value: String(rooms.length), icon: "grid" },
-                { label: "From", value: formatINR(fromPrice), icon: "bed" },
-                { label: "Front desk", value: "24 × 7", icon: "bell" },
-              ] as const
-            ).map((s) => {
-              const IconCmp = Icon[s.icon];
+          <div
+            className={`mx-auto -mt-10 grid max-w-4xl gap-px overflow-hidden rounded-[1.75rem] border border-hairline bg-hairline shadow-[var(--shadow-soft)] ${
+              stats.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"
+            }`}
+          >
+            {stats.map((st) => {
+              const IconCmp = Icon[st.icon];
               return (
                 <div
-                  key={s.label}
+                  key={st.label}
                   className="flex flex-col items-center gap-1.5 bg-paper px-5 py-6 text-center"
                 >
                   <IconCmp width={16} height={16} className="text-clay" />
-                  <span className="font-display text-lg text-ink">{s.value}</span>
+                  <span className="font-display text-lg text-ink">{st.value}</span>
                   <span className="text-[11px] uppercase tracking-[0.14em] text-faint">
-                    {s.label}
+                    {st.label}
                   </span>
                 </div>
               );
@@ -194,7 +187,7 @@ export default async function HomePage() {
                 </h2>
                 <p className="mt-4 max-w-md text-[14px] leading-relaxed text-white/70">
                   Our booking assistant answers questions, checks the real calendar and
-                  holds your room while you pay a 50% advance by UPI. The front desk
+                  holds your room while you pay a {s.advancePercent}% advance by UPI. The front desk
                   confirms right in the chat — and it's there when you want to extend.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">

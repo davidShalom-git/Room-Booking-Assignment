@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { config } from "@/config";
+import { siteSettings } from "@/lib/site-settings";
 import { PageFade } from "@/components/page-fade";
 
 const fraunces = Fraunces({
@@ -17,13 +17,13 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: `${config.property.name} — ${config.property.tagline}`,
-    template: `%s · ${config.property.name}`,
-  },
-  description: `${config.property.name}, ${config.property.city}. Scan, view the room, check dates and book in the chat.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await siteSettings();
+  return {
+    title: { default: `${s.name} — ${s.tagline}`, template: `%s · ${s.name}` },
+    description: `${s.name}, ${s.city}. Scan, view the room, check dates and book in the chat.`,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#fbf8f3",

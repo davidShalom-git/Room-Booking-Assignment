@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { config } from "@/config";
+import { siteSettings } from "@/lib/site-settings";
+import { phonePretty } from "@/lib/phone";
+import { formatTime } from "@/lib/pricing";
 import { Eyebrow } from "@/components/section-heading";
 import { Icon } from "@/components/icons";
 import { ChatCta } from "@/components/chat-cta";
 
 export const metadata: Metadata = { title: "Contact" };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const s = await siteSettings();
   const items = [
-    { icon: "phone" as const, label: "Call the front desk", value: config.property.phone, href: `tel:${config.property.phone.replace(/\s/g, "")}` },
-    { icon: "mail" as const, label: "Email", value: config.property.email, href: `mailto:${config.property.email}` },
-    { icon: "mapPin" as const, label: "Address", value: config.property.address },
+    { icon: "phone" as const, label: "Call the front desk", value: phonePretty(s.phone), href: `tel:+${s.phone}` },
+    ...(s.email ? [{ icon: "mail" as const, label: "Email", value: s.email, href: `mailto:${s.email}` }] : []),
+    { icon: "mapPin" as const, label: "Address", value: s.address },
   ];
 
   return (
@@ -58,12 +61,12 @@ export default function ContactPage() {
               <h2 className="font-display text-xl text-ink">The quickest way: the chat</h2>
               <p className="mt-2 text-[14px] leading-relaxed text-muted">
                 Ask about a room, check live availability and book — all in one chat.
-                We hold your room while you pay a 50% advance by UPI; the balance is
+                We hold your room while you pay a {s.advancePercent}% advance by UPI; the balance is
                 paid at check-in.
               </p>
               <ul className="mt-5 space-y-2 text-[13px] text-muted">
-                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Check-in from {config.property.checkIn}, check-out by {config.property.checkOut}</li>
-                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Front desk open 24 × 7</li>
+                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Check-in from {formatTime(s.checkInTime)}, check-out by {formatTime(s.checkOutTime)}</li>
+                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Or call us: {phonePretty(s.phone)}</li>
                 <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Extend your stay from the same chat</li>
               </ul>
               <div className="mt-6">

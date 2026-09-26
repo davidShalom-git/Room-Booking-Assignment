@@ -6,5 +6,9 @@ export function normalizePhone(raw: string): string {
   return d;
 }
 
+/** "919876543210" -> "+91 98765 43210" (Indian mobiles); other numbers as "+<digits>". */
+export const phonePretty = (digits: string) =>
+  /^91[6-9]\d{9}$/.test(digits) ? `+91 ${digits.slice(2, 7)} ${digits.slice(7)}` : `+${digits}`;
+
 /** Looks like a full international mobile number (country code included). */
 export const validPhone = (digits: string) => digits.length >= 11 && digits.length <= 15;

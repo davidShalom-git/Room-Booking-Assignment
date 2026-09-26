@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
-import { config } from "@/config";
 import { openChat } from "@/components/chat-widget";
 
 const LINKS = [
@@ -15,7 +14,7 @@ const LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ name }: { name: string }) {
   const pathname = usePathname();
   // The mobile menu remembers the page it was opened on, so navigating anywhere closes it.
   const [openAt, setOpenAt] = useState<string | null>(null);
@@ -58,7 +57,7 @@ export function SiteNav() {
             href="/"
             className="font-display text-[15px] font-medium tracking-tight text-ink"
           >
-            {config.property.name}
+            {name}
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">

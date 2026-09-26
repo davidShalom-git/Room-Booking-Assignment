@@ -3,6 +3,7 @@
  * function of (conversation, event, ports) -> (conversation, outgoing messages). Everything that
  * touches the outside world (database, clock, settings) comes in through `Ports` (ports-prisma.ts).
  */
+import type { Settings } from "@/lib/settings";
 
 export type Stage =
   | "browsing"
@@ -129,7 +130,8 @@ export type PortFail = {
 export type PortResult<T> = { ok: true; value: T } | PortFail;
 
 export interface Ports {
-  settings: { upiId: string; upiName: string };
+  /** The owner's settings (property details, times, advance, UPI). */
+  settings(): Promise<Settings>;
   now(): Date;
   rooms(): Promise<RoomInfo[]>;
   room(id: string): Promise<RoomInfo | null>;

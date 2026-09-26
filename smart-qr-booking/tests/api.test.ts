@@ -75,6 +75,14 @@ describe("cron: 9 PM summary", () => {
     assert.match(body.text, /rooms free/);
     assert.deepEqual((await prisma.rateLimit.findMany()).map((r) => r.key), ["chat:new"]);
   });
+
+  test("also deletes uploaded photos nothing uses, once they're a day old", async () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    await prisma.photo.create({ data: { type: "image/jpeg", data: jpeg, createdAt: new Date(Date.now() - 2 * 86_400_000) } });
+    await prisma.photo.create({ data: { type: "image/jpeg", data: jpeg } });
+    await summary(req("/api/cron/daily-summary", { authorization: "Bearer cron-secret" }));
+    assert.equal(await prisma.photo.count(), 1);
+  });
 });
 
 describe("availability API", () => {

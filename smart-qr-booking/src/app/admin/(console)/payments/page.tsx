@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Icon } from "@/components/icons";
 import { PaymentDecision } from "@/components/admin/booking-actions";
 import { Flash, one } from "@/components/admin/field";
-import { phonePretty } from "@/lib/bot/copy";
+import { phonePretty } from "@/lib/phone";
 
 export const metadata = { title: "Payments" };
 

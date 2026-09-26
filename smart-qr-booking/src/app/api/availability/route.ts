@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/db";
 import { config } from "@/config";
 import { isFree } from "@/lib/engine";
+import { getSettings } from "@/lib/settings";
 import { toInstant } from "@/lib/dates";
 import { nights, todayISO } from "@/lib/pricing";
 
@@ -25,9 +26,9 @@ export async function GET(request: Request) {
   try {
     const room = await prisma.room.findFirst({ where: { id: roomId, active: true } });
     if (!room) return json({ error: "Room not found." }, 404);
+    const { checkInTime, checkOutTime } = await getSettings();
     const available =
-      guests <= room.capacity &&
-      (await isFree(room.id, toInstant(from, config.defaults.checkInTime), toInstant(to, config.defaults.checkOutTime)));
+      guests <= room.capacity && (await isFree(room.id, toInstant(from, checkInTime), toInstant(to, checkOutTime)));
     return json({ available, nights: n, total: room.pricePerNight * n, ratePerNight: room.pricePerNight });
   } catch (e) {
     console.error("[availability]", e);

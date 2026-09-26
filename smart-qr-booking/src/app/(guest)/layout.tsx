@@ -1,19 +1,20 @@
 import { SiteNav } from "@/components/site-nav";
 import { Footer } from "@/components/footer";
 import { ChatWidget } from "@/components/chat-widget";
-import { config } from "@/config";
+import { siteSettings } from "@/lib/site-settings";
 
-export default function GuestLayout({
+export default async function GuestLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const s = await siteSettings();
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <SiteNav />
+      <SiteNav name={s.name} />
       <main className="flex-1">{children}</main>
       <Footer />
-      <ChatWidget name={config.property.name} />
+      <ChatWidget name={s.name} />
     </div>
   );
 }

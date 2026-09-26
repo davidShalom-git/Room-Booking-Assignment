@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { config, roomUrl } from "@/config";
 import { qrSvg, qrPng } from "@/lib/qr";
 import { QrCard } from "@/components/qr-card";
+import { siteSettings } from "@/lib/site-settings";
 import { PrintButton } from "@/components/print-button";
 import { Icon } from "@/components/icons";
 
@@ -10,7 +11,10 @@ export const metadata = { title: "QR Codes" };
 
 export default async function AdminQrPage() {
   await requireAdmin();
-  const rooms = await prisma.room.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+  const [rooms, s] = await Promise.all([
+    prisma.room.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    siteSettings(),
+  ]);
   const cards = await Promise.all(
     rooms.map(async (room) => ({
       room,
@@ -45,7 +49,7 @@ export default async function AdminQrPage() {
 
       <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {cards.map(({ room, svg, png }) => (
-          <QrCard key={room.id} room={room} svg={svg} png={png} compact />
+          <QrCard key={room.id} room={room} svg={svg} png={png} propertyName={s.name} compact />
         ))}
       </div>
     </div>
