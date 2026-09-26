@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Room } from "@/lib/data";
+import { tonightLabel, type RoomWithStatus } from "@/lib/room-status";
 import { formatINR } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
 import { StatusBadge } from "@/components/status-badge";
 
-export function RoomCard({ room, priority = false }: { room: Room; priority?: boolean }) {
+export function RoomCard({ room, priority = false }: { room: RoomWithStatus; priority?: boolean }) {
   return (
     <Link
       href={`/rooms/${room.id}`}
@@ -21,7 +21,7 @@ export function RoomCard({ room, priority = false }: { room: Room; priority?: bo
           className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.04]"
         />
         <div className="absolute left-3 top-3">
-          <StatusBadge status={room.status} />
+          <StatusBadge status={room.status} label={tonightLabel(room.status)} />
         </div>
         <div className="absolute right-3 top-3 rounded-full bg-cream/85 px-2.5 py-1 text-[11px] font-medium text-ink backdrop-blur-sm">
           Room {room.id}

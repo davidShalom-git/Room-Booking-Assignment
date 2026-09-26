@@ -1,0 +1,4 @@
+# Secrets live in Vercel's Environment Variables, never in the upload.
+.env
+.env.*
+!.env.example

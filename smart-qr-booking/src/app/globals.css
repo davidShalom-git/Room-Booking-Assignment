@@ -84,8 +84,10 @@ body {
     filter: blur(0);
   }
 }
+/* backwards, not both: once it has played, no transform or filter may stay on the page wrapper,
+   or every position:fixed element inside (the nav, the chat window) is trapped in the page. */
 .animate-fade-up {
-  animation: fade-up 0.7s var(--ease-fluid) both;
+  animation: fade-up 0.7s var(--ease-fluid) backwards;
 }
 
 @keyframes rise {

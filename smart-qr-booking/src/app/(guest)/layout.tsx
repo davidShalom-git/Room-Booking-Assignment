@@ -1,6 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 import { Footer } from "@/components/footer";
-import { ViewSwitcher } from "@/components/view-switcher";
+import { ChatWidget } from "@/components/chat-widget";
+import { config } from "@/config";
 
 export default function GuestLayout({
   children,
@@ -12,8 +13,7 @@ export default function GuestLayout({
       <SiteNav />
       <main className="flex-1">{children}</main>
       <Footer />
-      <ViewSwitcher />
-      <div className="h-16" aria-hidden />
+      <ChatWidget name={config.property.name} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 /**
- * DEMO CONFIG — swap these values before showing the client.
- * Everything the demo needs to feel like a real property lives here.
+ * Property configuration — the details that make this "your" hotel.
+ * Secrets and per-environment values (database, push keys, UPI id) are env vars,
+ * see .env.example; everything else the site shows lives here.
  */
 export const config = {
   property: {
@@ -11,7 +12,7 @@ export const config = {
     rating: 4.8,
     reviews: 214,
     email: "stay@coralcourtyard.example",
-    phone: "+91 75399 43015",
+    phone: "+91 86374 66746",
     checkIn: "1:00 PM",
     checkOut: "11:00 AM",
     // Property-level amenities shown on the home page.
@@ -25,18 +26,16 @@ export const config = {
     ],
   },
 
-  /**
-   * WhatsApp business number in international format, digits only (no +, spaces or dashes).
-   * Used to build real wa.me links (open WhatsApp with a pre-filled message).
-   */
-  whatsappNumber: "917539943015",
+  /** Share of the total collected up front to hold a booking. */
+  advanceRate: 0.5,
 
-  /**
-   * What the room QR codes point at:
-   *   "whatsapp" — scan opens WhatsApp with a pre-filled enquiry for that room (real)
-   *   "room"     — scan opens the room page on the website
-   */
-  qrTarget: "whatsapp" as "whatsapp" | "room",
+  /** Times applied when a booking is made in chat (property local time, IST). */
+  defaults: {
+    checkInTime: "13:00",
+    checkOutTime: "11:00",
+    /** Longest single stay the chat / console will accept. */
+    maxNights: 30,
+  },
 
   /**
    * Public base URL the QR codes point at. In production set NEXT_PUBLIC_BASE_URL

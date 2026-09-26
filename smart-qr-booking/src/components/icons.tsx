@@ -46,6 +46,16 @@ export const Icon = {
       <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20a2 2 0 0 0 4 0" />
     </svg>
   ),
+  chat: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...S(p)}>
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5v-9ZM8 9h8M8 12h5" />
+    </svg>
+  ),
+  send: (p: SVGProps<SVGSVGElement>) => (
+    <svg {...S(p)}>
+      <path d="M4 12 20 4l-6 16-3-7-7-1ZM11 13l9-9" />
+    </svg>
+  ),
   fridge: (p: SVGProps<SVGSVGElement>) => (
     <svg {...S(p)}>
       <rect x="6" y="2" width="12" height="20" rx="1.5" />
@@ -156,12 +166,6 @@ export const Icon = {
   star: (p: SVGProps<SVGSVGElement>) => (
     <svg {...S(p)} fill="currentColor" stroke="none">
       <path d="m12 3 2.6 5.5 6 .9-4.3 4.3 1 6-5.3-2.9L6.7 22.7l1-6L3.4 9.4l6-.9L12 3Z" />
-    </svg>
-  ),
-  whatsapp: (p: SVGProps<SVGSVGElement>) => (
-    <svg {...S(p)} strokeWidth={1.4}>
-      <path d="M4 20l1.4-4.2A8 8 0 1 1 12 20a8 8 0 0 1-3.6-.9L4 20Z" />
-      <path d="M9 9.2c.2 2 1.6 3.8 3.6 4.4.6.2 1.2 0 1.5-.4l.4-.6c.2-.3 0-.7-.3-.8l-1.3-.6c-.3-.1-.6 0-.8.2-.7-.3-1.3-.9-1.6-1.6.2-.2.3-.5.2-.8L9.6 7c-.1-.3-.5-.5-.8-.3l-.6.4c-.4.3-.6.9-.4 1.5" />
     </svg>
   ),
   download: (p: SVGProps<SVGSVGElement>) => (

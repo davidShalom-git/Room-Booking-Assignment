@@ -1,0 +1,22 @@
+# Local Postgres for development and tests.  `npm run db:up`
+# Host port 55432 avoids clashing with any Postgres already on 5432.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coral
+      POSTGRES_PASSWORD: coral
+      POSTGRES_DB: coral
+    ports:
+      - "55432:5432"
+    volumes:
+      - coral-pgdata:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coral -d coral"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  coral-pgdata:

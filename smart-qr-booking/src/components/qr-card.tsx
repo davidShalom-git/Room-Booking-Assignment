@@ -1,13 +1,11 @@
-import type { Room } from "@/lib/data";
-import { config } from "@/config";
-import { qrLink } from "@/lib/whatsapp";
+type Room = { id: string; name: string; pricePerNight: number; capacity: number };
+import { config, roomUrl } from "@/config";
 import { formatINR } from "@/lib/pricing";
 import { Icon } from "@/components/icons";
 
 /**
- * One room's QR. `svg` and `png` are generated server-side (see lib/qr.ts) from
- * qrLink(room). With config.qrTarget = "whatsapp" (default) a scan opens
- * WhatsApp with a pre-filled enquiry for that room; "room" opens the web page.
+ * One room's QR. `svg` and `png` are generated server-side (see lib/qr.ts) from the room's
+ * page URL: a scan opens that room's page, where the guest books in the chat.
  */
 export function QrCard({
   room,
@@ -20,8 +18,7 @@ export function QrCard({
   png: string;
   compact?: boolean;
 }) {
-  const toWhatsapp = config.qrTarget === "whatsapp";
-  const target = qrLink(room);
+  const target = roomUrl(room.id);
 
   return (
     <div className="flex flex-col rounded-[1.75rem] border border-hairline bg-paper p-1.5">
@@ -40,8 +37,7 @@ export function QrCard({
           </p>
         )}
         <p className="mt-3 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-faint">
-          {toWhatsapp && <Icon.whatsapp width={12} height={12} />}
-          {toWhatsapp ? "Scan to chat on WhatsApp" : "Scan to view this room & book"}
+          Scan to view this room &amp; book
         </p>
       </div>
 
@@ -53,7 +49,7 @@ export function QrCard({
           className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-hairline px-3 py-2 text-[12px] font-medium text-ink transition-colors hover:bg-ink/[0.03]"
         >
           <Icon.arrowUpRight width={13} height={13} />
-          {toWhatsapp ? "Open chat" : "Open link"}
+          Open link
         </a>
         <a
           href={png}
@@ -66,7 +62,7 @@ export function QrCard({
       </div>
 
       <p className="truncate px-4 pb-3 text-center text-[10px] text-faint">
-        {toWhatsapp ? `wa.me/${config.whatsappNumber} · Room ${room.id}` : target}
+        {target}
       </p>
     </div>
   );

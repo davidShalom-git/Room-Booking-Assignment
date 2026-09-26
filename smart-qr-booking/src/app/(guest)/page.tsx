@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { config } from "@/config";
-import { rooms, PROPERTY_IMAGES } from "@/lib/data";
+import { PROPERTY_IMAGES } from "@/lib/data";
+import { getRooms } from "@/lib/rooms";
 import { Icon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { CtaButton } from "@/components/cta-button";
+import { ChatCta } from "@/components/chat-cta";
 import { RoomCard } from "@/components/room-card";
 import { SectionHeading, Eyebrow } from "@/components/section-heading";
 import { formatINR } from "@/lib/pricing";
@@ -16,20 +18,23 @@ const STEPS = [
     body: "Every door has its own code. A guest points their camera — no app, no reception queue.",
   },
   {
-    icon: "whatsapp" as const,
-    title: "WhatsApp opens on that room",
-    body: "Their WhatsApp opens with a message about that exact room, addressed to the front desk. One tap to send.",
+    icon: "chat" as const,
+    title: "That room's page opens",
+    body: "Photos, price and live availability for that exact room — with a Book in chat button. Nothing to install.",
   },
   {
     icon: "bed" as const,
     title: "Ask, book, or extend — all in chat",
-    body: "Questions, a full booking with dates and guests, and later the extend-or-check-out flow. The website is there too, if they'd rather browse.",
+    body: "Ask anything, check live availability, and book with a small UPI advance. Near the end of the stay, extend or check out — all in the same chat.",
   },
 ];
 
-export default function HomePage() {
-  const fromPrice = Math.min(...rooms.map((r) => r.pricePerNight));
-  const available = rooms.filter((r) => r.status !== "occupied").slice(0, 6);
+export default async function HomePage() {
+  const rooms = await getRooms();
+  const fromPrice = rooms.length ? Math.min(...rooms.map((r) => r.pricePerNight)) : 0;
+  const available = [...rooms]
+    .sort((a, b) => Number(a.status !== "available") - Number(b.status !== "available"))
+    .slice(0, 6);
 
   return (
     <>
@@ -69,9 +74,7 @@ export default function HomePage() {
                     <CtaButton href="/rooms" icon="arrowRight">
                       Explore rooms
                     </CtaButton>
-                    <CtaButton href="/whatsapp" variant="whatsapp" icon="whatsapp">
-                      Chat on WhatsApp
-                    </CtaButton>
+                    <ChatCta variant="cream">Chat to book</ChatCta>
                   </div>
                 </div>
               </div>
@@ -111,9 +114,9 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <Reveal>
             <SectionHeading
-              eyebrow="The Smart QR concept"
+              eyebrow="How booking works"
               title={<>From the door to a booking<br className="hidden sm:block" /> in under a minute</>}
-              lede="No printed brochures, no “let me check the register”. The QR carries the guest straight into a live, bookable room page."
+              lede="No app, no forms, no queue at reception. Every room's code opens its page, with a chat that knows the room, checks live availability and holds it for you."
             />
           </Reveal>
           <div className="mt-12 grid gap-4 md:grid-cols-3">
@@ -140,10 +143,10 @@ export default function HomePage() {
           <Reveal delay={120}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <CtaButton href="/qr" variant="outline" icon="qr">
-                See the QR demo
+                Scan a room code
               </CtaButton>
               <span className="text-[13px] text-faint">
-                Try scanning one with your phone — it really opens the room page.
+                Point your phone at any code — that room's page opens, ready to book.
               </span>
             </div>
           </Reveal>
@@ -155,7 +158,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <Reveal>
             <div className="flex flex-wrap items-end justify-between gap-4">
-              <SectionHeading eyebrow="Stay with us" title="Available rooms" />
+              <SectionHeading eyebrow="Stay with us" title="Our rooms" />
               <Link
                 href="/rooms"
                 className="group inline-flex items-center gap-1.5 text-sm font-medium text-clay"
@@ -179,75 +182,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* WhatsApp band */}
+      {/* Chat band */}
       <section className="px-4 py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="overflow-hidden rounded-[2.25rem] border border-hairline bg-[#0f2f1f] p-1.5">
-            <div className="grid min-w-0 grid-cols-1 items-center gap-8 rounded-[1.9rem] bg-[radial-gradient(120%_140%_at_0%_0%,#1a4a30,#0f2f1f)] p-8 sm:p-12 md:grid-cols-2">
+          <div className="overflow-hidden rounded-[2.25rem] border border-hairline bg-ink p-1.5">
+            <div className="grid min-w-0 grid-cols-1 items-center gap-8 rounded-[1.9rem] bg-[radial-gradient(120%_140%_at_0%_0%,#4a3426,#262119)] p-8 sm:p-12 md:grid-cols-2">
               <div className="min-w-0">
-                <Eyebrow>WhatsApp enquiry</Eyebrow>
+                <Eyebrow>Book in the chat</Eyebrow>
                 <h2 className="font-display mt-4 text-3xl leading-tight text-white sm:text-4xl">
-                  Your guests already live on WhatsApp
+                  Book the way you already chat
                 </h2>
                 <p className="mt-4 max-w-md text-[14px] leading-relaxed text-white/70">
-                  Every “Ask on WhatsApp” button opens a chat with the room, dates and
-                  guest count already typed out. Today it reaches your phone. Next, it
-                  answers on its own — from your room data.
+                  Our booking assistant answers questions, checks the real calendar and
+                  holds your room while you pay a 50% advance by UPI. The front desk
+                  confirms right in the chat — and it's there when you want to extend.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <CtaButton href="/whatsapp" variant="whatsapp" icon="whatsapp">
-                    Open the live assistant
-                  </CtaButton>
-                  <CtaButton href="/future" variant="outline" icon="sparkles" className="border-white/25 text-white hover:bg-white/10">
-                    See future automation
+                  <ChatCta>Start a chat</ChatCta>
+                  <CtaButton href="/rooms" variant="outline" icon="arrowRight" className="border-white/25 text-white hover:bg-white/10">
+                    Browse rooms first
                   </CtaButton>
                 </div>
               </div>
               <div className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5">
                 <div className="flex min-w-0 flex-col gap-2.5 text-[13px]">
                   <div className="flex justify-end">
-                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
-                      Is Room 101 free 10–12 Sep for 2?
+                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-cream px-3.5 py-2 text-ink">
+                      Is Room 101 free 10–12 Oct for 2?
                     </p>
                   </div>
                   <div className="flex justify-start">
                     <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
-                      Yes — Deluxe Double, 2 nights × ₹1,800 = ₹3,600. Shall I hold it?
+                      ✅ Room 101 is free 10 → 12 Oct (2 nights). Total ₹3,600.
                     </p>
                   </div>
                   <div className="flex justify-end">
-                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-[#25d366]/90 px-3.5 py-2 text-[#08240f]">
-                      Yes please, under David
+                    <p className="max-w-[80%] rounded-2xl rounded-br-md bg-cream px-3.5 py-2 text-ink">
+                      Book it — under David
                     </p>
                   </div>
                   <div className="flex justify-start">
                     <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/10 px-3.5 py-2 text-white/90">
-                      Booked ✅ HTL-20260910-001 · you&apos;ll get the details here.
+                      Held for you ✅ Pay the ₹1,800 advance by UPI and we&apos;ll confirm here.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Owner band */}
-      <section className="px-4 pb-4">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col items-start justify-between gap-6 rounded-[2rem] border border-hairline bg-paper p-8 sm:flex-row sm:items-center sm:p-10">
-            <div>
-              <Eyebrow>For the owner</Eyebrow>
-              <h2 className="font-display mt-3 text-2xl text-ink sm:text-3xl">
-                See what your front desk sees
-              </h2>
-              <p className="mt-2 max-w-md text-[14px] text-muted">
-                A dashboard with rooms, bookings and one-click QR codes for every door.
-              </p>
-            </div>
-            <CtaButton href="/admin" variant="primary" icon="gauge">
-              Open admin demo
-            </CtaButton>
           </div>
         </div>
       </section>

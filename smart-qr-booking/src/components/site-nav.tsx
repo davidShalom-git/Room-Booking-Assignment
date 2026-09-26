@@ -5,22 +5,28 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons";
 import { config } from "@/config";
-import { waLink, enquiryMessage } from "@/lib/whatsapp";
+import { openChat } from "@/components/chat-widget";
 
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/rooms", label: "Rooms" },
-  { href: "/qr", label: "Scan Demo" },
+  { href: "/qr", label: "Scan to book" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
 export function SiteNav() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  // The mobile menu remembers the page it was opened on, so navigating anywhere closes it.
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt === pathname;
+  const setOpen = (next: boolean | ((was: boolean) => boolean)) =>
+    setOpenAt((prev) => {
+      const v = typeof next === "function" ? next(prev === pathname) : next;
+      return v ? pathname : null;
+    });
   const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
@@ -34,6 +40,7 @@ export function SiteNav() {
     };
   }, [open]);
 
+  const mobileLinks = LINKS;
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -71,15 +78,14 @@ export function SiteNav() {
           </div>
 
           <div className="flex items-center gap-2">
-            <a
-              href={waLink(enquiryMessage({}))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center gap-1.5 rounded-full bg-[#1f8a4c] px-3.5 py-1.5 text-[12px] font-medium text-white transition-transform duration-300 hover:scale-[1.03] sm:inline-flex"
+            <button
+              type="button"
+              onClick={() => openChat()}
+              className="hidden items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-[12px] font-medium text-cream transition-transform duration-300 hover:scale-[1.03] sm:inline-flex"
             >
-              <Icon.whatsapp width={14} height={14} />
-              WhatsApp
-            </a>
+              <Icon.chat width={14} height={14} />
+              Chat to book
+            </button>
             <button
               aria-label={open ? "Close menu" : "Open menu"}
               onClick={() => setOpen((v) => !v)}
@@ -109,7 +115,7 @@ export function SiteNav() {
         }`}
       >
         <div className="flex flex-col gap-2">
-          {LINKS.map((l, i) => (
+          {mobileLinks.map((l, i) => (
             <Link
               key={l.href}
               href={l.href}
@@ -123,20 +129,22 @@ export function SiteNav() {
               {l.label}
             </Link>
           ))}
-          <a
-            href={waLink(enquiryMessage({}))}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex w-fit max-w-full items-center gap-2 rounded-full bg-[#1f8a4c] px-5 py-3 text-sm font-medium text-white transition-all duration-500"
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openChat();
+            }}
+            className="mt-6 inline-flex w-fit max-w-full items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-cream transition-all duration-500"
             style={{
-              transitionDelay: open ? `${80 + LINKS.length * 55}ms` : "0ms",
+              transitionDelay: open ? `${80 + mobileLinks.length * 55}ms` : "0ms",
               opacity: open ? 1 : 0,
               transform: open ? "translateY(0)" : "translateY(20px)",
             }}
           >
-            <Icon.whatsapp width={16} height={16} />
-            Chat on WhatsApp
-          </a>
+            <Icon.chat width={16} height={16} />
+            Chat to book
+          </button>
         </div>
       </div>
     </>

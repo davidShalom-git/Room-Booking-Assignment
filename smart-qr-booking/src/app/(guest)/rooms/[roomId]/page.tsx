@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { rooms, getRoom } from "@/lib/data";
-import { config } from "@/config";
+import { getRooms, tonightLabel } from "@/lib/rooms";
+import { config, roomUrl } from "@/config";
 import { formatINR } from "@/lib/pricing";
-import { qrLink } from "@/lib/whatsapp";
 import { qrSvg } from "@/lib/qr";
 import { Icon, amenityIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/status-badge";
@@ -12,17 +11,13 @@ import { RoomBooking } from "@/components/room-booking";
 import { RoomCard } from "@/components/room-card";
 import { Reveal } from "@/components/reveal";
 
-export function generateStaticParams() {
-  return rooms.map((r) => ({ roomId: r.id }));
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ roomId: string }>;
 }): Promise<Metadata> {
   const { roomId } = await params;
-  const room = getRoom(roomId);
+  const room = (await getRooms()).find((r) => r.id === decodeURIComponent(roomId));
   if (!room) return { title: "Room not found" };
   return {
     title: `Room ${room.id} — ${room.name}`,
@@ -36,10 +31,11 @@ export default async function RoomPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params;
-  const room = getRoom(roomId);
+  const rooms = await getRooms();
+  const room = rooms.find((r) => r.id === decodeURIComponent(roomId));
   if (!room) notFound();
 
-  const svg = await qrSvg(qrLink(room));
+  const svg = await qrSvg(roomUrl(room.id));
   const others = rooms.filter((r) => r.id !== room.id).slice(0, 3);
 
   const facts = [
@@ -71,7 +67,7 @@ export default async function RoomPage({
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-faint">
                 Room {room.id}
               </span>
-              <StatusBadge status={room.status} />
+              <StatusBadge status={room.status} label={tonightLabel(room.status)} />
             </div>
             <h1 className="font-display mt-2 text-4xl leading-[1.03] text-ink sm:text-[3rem]">
               {room.name}
@@ -140,7 +136,7 @@ export default async function RoomPage({
             <div className="rounded-[1.75rem] border border-hairline bg-paper p-1.5 lg:sticky lg:top-24">
               <div className="flex flex-col items-center rounded-[1.4rem] bg-sand/50 px-6 py-8 text-center">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-faint">
-                  This room's code
+                  Continue on your phone
                 </span>
                 <div className="mt-4 rounded-2xl bg-paper p-4 shadow-[var(--shadow-soft)]">
                   <div
@@ -149,15 +145,15 @@ export default async function RoomPage({
                   />
                 </div>
                 <p className="mt-4 text-[13px] text-muted">
-                  Print it, stick it on the door of Room {room.id}. A guest scan opens
-                  WhatsApp with this room&apos;s enquiry ready to send.
+                  Scan with your phone camera — this page opens on your phone, ready to
+                  check dates and book in the chat.
                 </p>
                 <Link
                   href="/qr"
                   className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-clay"
                 >
                   <Icon.qr width={14} height={14} />
-                  See all room codes
+                  All room codes
                 </Link>
               </div>
             </div>

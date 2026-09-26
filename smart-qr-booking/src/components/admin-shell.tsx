@@ -3,13 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { config } from "@/config";
+import { logout } from "@/app/admin/actions";
 import { Icon, type IconName } from "@/components/icons";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
+  { href: "/admin/today", label: "Today", icon: "bell" },
   { href: "/admin", label: "Dashboard", icon: "gauge" },
-  { href: "/admin/rooms", label: "Rooms", icon: "grid" },
   { href: "/admin/bookings", label: "Bookings", icon: "calendar" },
+  { href: "/admin/payments", label: "Payments", icon: "checkCircle" },
+  { href: "/admin/customers", label: "Customers", icon: "users" },
+  { href: "/admin/rooms", label: "Rooms", icon: "grid" },
   { href: "/admin/qr", label: "QR Codes", icon: "qr" },
+  { href: "/admin/import", label: "Import", icon: "download" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -26,13 +31,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <p className="font-display text-[15px] text-ink">{config.property.name}</p>
             <p className="text-[11px] uppercase tracking-[0.16em] text-faint">Owner console</p>
           </div>
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-[11px] font-medium text-muted transition-colors hover:text-ink md:hidden"
-          >
-            <Icon.logout width={12} height={12} />
-            Guest
-          </Link>
+          <form action={logout} className="md:hidden">
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-[11px] font-medium text-muted transition-colors hover:text-ink"
+            >
+              <Icon.logout width={12} height={12} />
+              Sign out
+            </button>
+          </form>
         </div>
 
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:px-3 md:pb-0">
@@ -58,18 +65,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="hidden px-3 pt-6 md:block">
           <Link
             href="/"
+            target="_blank"
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
           >
-            <Icon.logout width={14} height={14} />
-            Back to guest view
+            <Icon.arrowUpRight width={14} height={14} />
+            View website
           </Link>
-          <p className="mt-4 rounded-xl bg-sand/60 px-3 py-2 text-[10.5px] leading-relaxed text-faint">
-            Demo console · mock data. New bookings made in the guest flow appear here.
-          </p>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
+            >
+              <Icon.logout width={14} height={14} />
+              Sign out
+            </button>
+          </form>
         </div>
       </aside>
 
-      <main className="flex-1 px-4 py-6 sm:px-8 sm:py-10">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-10">{children}</main>
     </div>
   );
 }

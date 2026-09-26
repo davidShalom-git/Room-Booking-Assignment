@@ -1,4 +1,5 @@
 /** Pure booking maths + formatting. No React, no side effects. */
+import { istDate } from "@/lib/dates";
 
 export const MS_PER_DAY = 86_400_000;
 
@@ -47,8 +48,8 @@ export function formatDateTime(iso: string, hhmm: string): string {
 }
 
 /**
- * Booking id: HTL-YYYYMMDD-NNN where YYYYMMDD is the check-in date and NNN is a
- * per-day sequence. For the demo the sequence is derived from a count.
+ * Booking reference: HTL-YYYYMMDD-NNN — check-in date plus the booking's sequence number
+ * (Booking.seq, unique across all bookings). See engine.bookingRef().
  */
 export function makeBookingId(checkIn: string, sequence: number): string {
   const compact = checkIn.replaceAll("-", "");
@@ -59,9 +60,9 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const toISO = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** Today as YYYY-MM-DD in local time (no UTC shift). */
-export function todayISO(): string {
-  return toISO(new Date());
+/** Today as YYYY-MM-DD in property time (IST) — never the server's or browser's zone. */
+export function todayISO(now: Date = new Date()): string {
+  return istDate(now);
 }
 
 /** Add days to a YYYY-MM-DD string, returning YYYY-MM-DD (local, no UTC shift). */
@@ -71,23 +72,4 @@ export function addDays(iso: string, days: number): string {
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   d.setDate(d.getDate() + days);
   return toISO(d);
-}
-
-// --- self-check: `npx tsx src/lib/pricing.ts` -------------------------------
-if (process.argv[1]?.endsWith("pricing.ts")) {
-  const assert = (c: boolean, m: string) => {
-    if (!c) throw new Error("FAIL: " + m);
-    console.log("ok  -", m);
-  };
-  assert(nights("2026-09-10", "2026-09-12") === 2, "2 nights 10->12 Sep");
-  assert(nights("2026-09-12", "2026-09-10") === 0, "reversed dates -> 0");
-  assert(nights("garbage", "2026-09-12") === 0, "bad date -> 0");
-  assert(nights("2026-03-28", "2026-04-02") === 5, "spans month + DST-ish");
-  assert(bookingTotal(1800, 2) === 3600, "1800 x 2 = 3600");
-  assert(formatINR(3600) === "₹3,600", "INR grouping");
-  assert(formatINR(1200000) === "₹12,00,000", "INR lakh grouping");
-  assert(formatDate("2026-09-10") === "10 Sep 2026", "date format");
-  assert(makeBookingId("2026-09-10", 1) === "HTL-20260910-001", "booking id");
-  assert(addDays("2026-09-10", 2) === "2026-09-12", "addDays");
-  console.log("\nall pricing checks passed");
 }

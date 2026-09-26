@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { config } from "@/config";
 import { Eyebrow } from "@/components/section-heading";
 import { Icon } from "@/components/icons";
-import { waLink, enquiryMessage } from "@/lib/whatsapp";
-import { ContactForm } from "@/components/contact-form";
+import { ChatCta } from "@/components/chat-cta";
 
 export const metadata: Metadata = { title: "Contact" };
 
 export default function ContactPage() {
   const items = [
-    { icon: "whatsapp" as const, label: "WhatsApp", value: config.property.phone, href: waLink(enquiryMessage({})) },
     { icon: "phone" as const, label: "Call the front desk", value: config.property.phone, href: `tel:${config.property.phone.replace(/\s/g, "")}` },
     { icon: "mail" as const, label: "Email", value: config.property.email, href: `mailto:${config.property.email}` },
     { icon: "mapPin" as const, label: "Address", value: config.property.address },
@@ -57,11 +55,20 @@ export default function ContactPage() {
 
           <div className="rounded-[1.75rem] border border-hairline bg-paper p-1.5">
             <div className="rounded-[1.4rem] bg-sand/30 p-6">
-              <h2 className="font-display text-xl text-ink">Send a message</h2>
-              <p className="mt-1 text-[13px] text-muted">
-                Demo form — in production this drops into your inbox or WhatsApp.
+              <h2 className="font-display text-xl text-ink">The quickest way: the chat</h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted">
+                Ask about a room, check live availability and book — all in one chat.
+                We hold your room while you pay a 50% advance by UPI; the balance is
+                paid at check-in.
               </p>
-              <ContactForm />
+              <ul className="mt-5 space-y-2 text-[13px] text-muted">
+                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Check-in from {config.property.checkIn}, check-out by {config.property.checkOut}</li>
+                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Front desk open 24 × 7</li>
+                <li className="flex items-center gap-2"><Icon.check width={14} height={14} className="text-sage" /> Extend your stay from the same chat</li>
+              </ul>
+              <div className="mt-6">
+                <ChatCta>Chat to book</ChatCta>
+              </div>
             </div>
           </div>
         </div>

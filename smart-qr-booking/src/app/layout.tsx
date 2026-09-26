@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     default: `${config.property.name} — ${config.property.tagline}`,
     template: `%s · ${config.property.name}`,
   },
-  description: `${config.property.name}, ${config.property.city}. Scan, view the room, check dates and book — or ask on WhatsApp.`,
+  description: `${config.property.name}, ${config.property.city}. Scan, view the room, check dates and book in the chat.`,
 };
 
 export const viewport: Viewport = {

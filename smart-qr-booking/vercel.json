@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi && next build",
+  "crons": [
+    {
+      "path": "/api/cron/last-day",
+      "schedule": "30 11 * * *"
+    },
+    {
+      "path": "/api/cron/daily-summary",
+      "schedule": "30 15 * * *"
+    }
+  ]
+}

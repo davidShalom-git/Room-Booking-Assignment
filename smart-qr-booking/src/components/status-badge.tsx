@@ -14,13 +14,13 @@ const dot: Record<string, string> = {
   pending: "bg-[#c98a3c]",
 };
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${tones[status] ?? "bg-ink/[0.06] text-muted"}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dot[status] ?? "bg-muted"}`} />
-      {status}
+      {label ?? status}
     </span>
   );
 }

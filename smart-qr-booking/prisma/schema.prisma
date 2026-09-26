@@ -1,0 +1,170 @@
+// The Coral Courtyard — booking database.
+// Overlap safety is NOT expressed here: it is a Postgres EXCLUDE constraint added by the
+// `booking_no_overlap` migration (Prisma can't model it). See docs/superpowers/specs.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Room {
+  id               String    @id // room number, e.g. "101" — also the URL segment and QR payload
+  name             String
+  type             String
+  pricePerNight    Int // INR
+  capacity         Int
+  bed              String
+  ac               Boolean
+  size             String
+  floor            Int
+  shortDescription String
+  description      String
+  amenities        String[]
+  images           String[]
+  active           Boolean   @default(true)
+  sortOrder        Int       @default(0)
+  bookings         Booking[]
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+/// WHATSAPP: made in the old WhatsApp bot (kept for history). WEB: the website chat. ADMIN: the desk.
+enum BookingSource {
+  WHATSAPP
+  ADMIN
+  WEB
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  /// Human reference is HTL-<check-in date>-<seq>, see lib/engine.ts bookingRef().
+  seq           Int           @unique @default(autoincrement())
+  roomId        String
+  room          Room          @relation(fields: [roomId], references: [id])
+  /// The guest's account (one per phone number).
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  /// Another contact number for this stay, if one was given (guestPhone is the booking's number).
+  contactPhone  String?
+  payments      Payment[]
+  guestName     String
+  /// Digits only, international format — the guest's mobile number.
+  guestPhone    String
+  guests        Int
+  checkInAt     DateTime      @db.Timestamptz(3)
+  checkOutAt    DateTime      @db.Timestamptz(3)
+  /// Rate at the time of booking; later price edits don't change existing bookings.
+  ratePerNight  Int
+  nights        Int
+  total         Int
+  advancePaid   Int           @default(0)
+  status        BookingStatus
+  source        BookingSource
+  /// PENDING only: the room is released when this passes without payment.
+  holdExpiresAt DateTime?     @db.Timestamptz(3)
+  /// Set on the second leg of a mid-stay room move.
+  parentId      String?
+  /// Check-out date the "last day tomorrow" nudge was sent for (keeps the cron idempotent).
+  lastDayNudgeFor String?
+  /// The website chat that made this booking ("web:<id>"): its messages go there, and only that chat can act on it.
+  chatKey       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([roomId, checkInAt])
+  @@index([guestPhone])
+  @@index([parentId])
+  @@index([chatKey])
+}
+
+/// A guest account: one per phone number. Created automatically with their first booking.
+model Customer {
+  id        String    @id @default(cuid())
+  phone     String    @unique
+  name      String    @default("")
+  email     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+}
+
+enum PaymentKind {
+  ADVANCE
+  EXTENSION
+  BALANCE
+}
+
+enum PaymentStatus {
+  AWAITING
+  CLAIMED
+  ACKNOWLEDGED
+  REJECTED
+  CANCELLED
+}
+
+/// Every amount owed: the advance of a stay, a paid extension / room move, or the balance at check-in.
+model Payment {
+  id             String        @id @default(cuid())
+  bookingId      String
+  booking        Booking       @relation(fields: [bookingId], references: [id])
+  kind           PaymentKind
+  amount         Int
+  status         PaymentStatus
+  /// UPI reference (UTR) the guest gave when they said they'd paid.
+  utr            String?
+  proof          String?
+  claimedAt      DateTime?     @db.Timestamptz(3)
+  acknowledgedAt DateTime?     @db.Timestamptz(3)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status])
+  @@index([bookingId])
+  @@index([utr])
+}
+
+/// One row per website chat ("web:<id>"): where the booking assistant is in the conversation.
+model Conversation {
+  chat      String   @id
+  roomId    String?
+  stage     String   @default("browsing")
+  draft     Json     @default("{}")
+  updatedAt DateTime @updatedAt
+}
+
+/// Website chat transcript: what the guest typed and what the bot answered, per chat ("web:<id>").
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  chat      String
+  fromGuest Boolean
+  text      String
+  /// Reply buttons / list rows shown under a bot message.
+  buttons   Json?
+  list      Json?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([chat, id])
+}
+
+/// A phone or browser where the owner turned on notifications (Web Push).
+model PushSubscription {
+  endpoint  String   @id
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+/// Fixed-window counters for public endpoints (the website chat).
+model RateLimit {
+  key         String   @id
+  windowStart DateTime @db.Timestamptz(3)
+  count       Int
+}

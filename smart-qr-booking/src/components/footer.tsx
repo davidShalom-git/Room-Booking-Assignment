@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { config } from "@/config";
 import { Icon } from "@/components/icons";
-import { waLink, enquiryMessage } from "@/lib/whatsapp";
+import { ChatCta } from "@/components/chat-cta";
 
 export function Footer() {
   return (
@@ -13,15 +13,7 @@ export function Footer() {
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
               {config.property.tagline}. {config.property.address}.
             </p>
-            <a
-              href={waLink(enquiryMessage({}))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#1f8a4c] px-4 py-2 text-[13px] font-medium text-white"
-            >
-              <Icon.whatsapp width={15} height={15} />
-              Chat on WhatsApp
-            </a>
+            <ChatCta className="mt-5">Chat to book</ChatCta>
           </div>
 
           <div>
@@ -30,9 +22,10 @@ export function Footer() {
             </p>
             <ul className="mt-4 space-y-2 text-sm text-muted">
               <li><Link href="/rooms" className="hover:text-ink">Rooms</Link></li>
-              <li><Link href="/qr" className="hover:text-ink">Scan demo</Link></li>
-              <li><Link href="/whatsapp" className="hover:text-ink">WhatsApp assistant</Link></li>
-              <li><Link href="/future" className="hover:text-ink">Future automation</Link></li>
+              <li><Link href="/qr" className="hover:text-ink">Scan to book</Link></li>
+              <li><Link href="/about" className="hover:text-ink">About</Link></li>
+              <li><Link href="/contact" className="hover:text-ink">Contact</Link></li>
+              <li><Link href="/privacy" className="hover:text-ink">Privacy</Link></li>
             </ul>
           </div>
 
@@ -41,8 +34,10 @@ export function Footer() {
               Contact
             </p>
             <ul className="mt-4 space-y-2 text-sm text-muted">
-              <li className="flex items-center gap-2">
-                <Icon.phone width={14} height={14} /> {config.property.phone}
+              <li>
+                <a href={`tel:${config.property.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 hover:text-ink">
+                  <Icon.phone width={14} height={14} /> {config.property.phone}
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <Icon.mail width={14} height={14} /> {config.property.email}
@@ -55,8 +50,8 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-2 border-t border-hairline pt-6 text-[12px] text-faint sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {config.property.name}. Demo prototype — not a live booking service.</p>
-          <p>Smart QR Booking + WhatsApp Enquiry · MVP concept</p>
+          <p>© {new Date().getFullYear()} {config.property.name}. All rights reserved.</p>
+          <p>Book in the chat on any page · pay by UPI · {config.property.phone}</p>
         </div>
       </div>
     </footer>

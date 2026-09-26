@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { config } from "@/config";
-import { rooms, PROPERTY_IMAGES } from "@/lib/data";
+import { PROPERTY_IMAGES } from "@/lib/data";
+import { getRooms } from "@/lib/rooms";
 import { Eyebrow, SectionHeading } from "@/components/section-heading";
 import { Reveal } from "@/components/reveal";
 import { CtaButton } from "@/components/cta-button";
@@ -9,7 +10,8 @@ import { Icon } from "@/components/icons";
 
 export const metadata: Metadata = { title: "About" };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const rooms = await getRooms();
   return (
     <div className="px-4 pt-28">
       <div className="mx-auto max-w-5xl">
