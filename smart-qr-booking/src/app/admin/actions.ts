@@ -83,6 +83,15 @@ export async function createWalkInAction(prev: FormState, formData: FormData): P
   redirect(`/admin/bookings?msg=${encodeURIComponent(r.message ?? "Booked.")}`);
 }
 
+/** Extend / move a stay (bookings/[id]/extend). A refusal goes back to that page. */
+export async function extendAction(formData: FormData) {
+  await requireAdmin();
+  const r = await ops.extendAsAdmin(formValues(formData));
+  revalidatePath("/admin", "layout");
+  if (!r.ok) backTo(formData, false, r.error);
+  redirect(`/admin/bookings?msg=${encodeURIComponent(r.message ?? "Extended.")}`);
+}
+
 export async function saveRoomAction(prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
   const values = formValues(formData);

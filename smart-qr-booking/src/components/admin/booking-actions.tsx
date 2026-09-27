@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ackPaymentAction, balanceAction, cancelAction, markPaidAction, rejectPaymentAction } from "@/app/admin/actions";
 import type { AdminBooking } from "@/lib/admin-data";
 import type { Settings } from "@/lib/settings";
@@ -118,6 +119,9 @@ export function BookingActions({
         >
           Send on WhatsApp
         </a>
+        <Link href={`/admin/bookings/${b.id}/extend`} className={pill}>
+          Extend / move
+        </Link>
         {due > 0 && (
           <form action={balanceAction}>
             {hidden}

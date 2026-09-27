@@ -27,8 +27,10 @@ export function ImportForm() {
           />
         </label>
         <p className="text-[12px] text-faint">
-          Columns: room, guest name, phone, check-in, check-out, guests, advance paid. Dates need the year (12/10/2026 or
-          2026-10-12). Each row becomes a confirmed booking; rows that clash with existing bookings are listed and skipped.
+          Upload a CSV file, or select the rows in Excel or Google Sheets, copy and paste them here (with or without the
+          header row). Columns, in this order: room, guest name, phone, check-in, check-out, guests, advance paid. Dates
+          are day first and need the full year (12/10/2026, 12-Oct-2026, 12 Oct 2026 or 2026-10-12). Each row becomes a
+          confirmed booking; rows that clash with existing bookings are listed and skipped.
         </p>
         {state.error && (
           <p role="alert" className="rounded-2xl border border-clay/30 bg-clay-soft px-4 py-3 text-[13px] text-clay-dark">

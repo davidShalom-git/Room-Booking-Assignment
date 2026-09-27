@@ -141,6 +141,16 @@ describe("importing existing bookings", () => {
     assert.equal(again.created.length, 0, "the same rows clash with themselves the second time");
   });
 
+  test("a pasted spreadsheet header is skipped whatever its wording, with tabs as separators", async () => {
+    const r = await importBookings([
+      "Room No\tGuest\tMobile\tFrom\tTo\tPax\tAdvance",
+      "101\tAsha Nair\t98470 12345\t12/10/2031\t14/10/2031\t2\t1,800",
+    ].join("\n"));
+    assert.deepEqual(r.errors, []);
+    assert.equal(r.created.length, 1);
+    assert.equal((await prisma.booking.findFirstOrThrow({ where: { guestName: "Asha Nair" } })).advancePaid, 1800);
+  });
+
   test("year-first and month-name dates import to the right year; a date that isn't really that year is refused", async () => {
     const r = await importBookings([
       "101,Slash Date,9847066666,2031/10/30,2031/11/02,1,0",

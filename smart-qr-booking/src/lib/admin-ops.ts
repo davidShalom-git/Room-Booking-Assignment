@@ -13,7 +13,7 @@ import { paymentView, stayView, toView } from "@/lib/bot/ports-prisma";
 import * as C from "@/lib/bot/copy";
 import type { Out } from "@/lib/bot/types";
 import { deliver } from "@/lib/deliver";
-import { parseDateText } from "@/lib/dates";
+import { istDate, parseDateText } from "@/lib/dates";
 import { formatDate, formatINR, nights as nightsBetween } from "@/lib/pricing";
 
 export type OpResult = { ok: true; message?: string } | { ok: false; error: string; field?: string };
@@ -185,6 +185,52 @@ export async function createWalkIn(input: Record<string, string | undefined>): P
   };
 }
 
+/**
+ * Extend a stay to `newCheckOut` from wherever it ends now — in the same room, or moved to
+ * another (`roomId`). Confirmed straight away with the `amount` received (blank = the extra
+ * nights in full, 0 = all still due). The chat can't do this for guests the owner entered.
+ */
+export async function extendAsAdmin(input: Record<string, string | undefined>): Promise<OpResult> {
+  const newCheckOut = text(input, "newCheckOut");
+  const o = await engine.extensionOptions(text(input, "id"), newCheckOut);
+  if (!o.ok) return fail(o.message);
+  const { stay } = o.value;
+  if (stay.pending) {
+    return fail(`An extension (${engine.bookingRef(stay.pending)}) is already waiting for payment — confirm or cancel it first.`);
+  }
+  const room = await prisma.room.findUnique({ where: { id: text(input, "roomId") } });
+  if (!room) return fail("Pick a room.");
+  const from = istDate(stay.end.checkOutAt);
+  const total = room.pricePerNight * nightsBetween(from, newCheckOut);
+  const amount = parseAmount(text(input, "amount"), total);
+  if (amount === null) return fail(`Enter an amount between ₹0 and ${formatINR(total)}.`, "amount");
+
+  const seg = await engine.createSegment({ stayId: stay.root.id, roomId: room.id, newCheckOut });
+  if (!seg.ok) {
+    const c = seg.conflict;
+    if (seg.code !== "CONFLICT") return fail(seg.message);
+    return fail(
+      c
+        ? `Room ${room.id} is already booked ${formatDate(c.checkIn)} → ${formatDate(c.checkOut)} by ${c.guestName} (${c.ref}).`
+        : `Room ${room.id} is already booked for those nights.`,
+    );
+  }
+  const r = await payments.confirmBooking(seg.value.id, amount);
+  if (!r.ok) return fail(r.message);
+  await tellGuest(r.value, C.extensionConfirmed(toView(r.value), stay.end.roomId));
+
+  const due = r.value.total - r.value.advancePaid;
+  const paid = `${formatINR(r.value.advancePaid)} received${due > 0 ? `, ${formatINR(due)} still due` : ""}`;
+  const ref = engine.bookingRef(stay.root);
+  return {
+    ok: true,
+    message:
+      room.id === stay.end.roomId
+        ? `Extended ${ref} in Room ${room.id} to ${formatDate(newCheckOut)} — ${paid}.`
+        : `${ref} moves to Room ${room.id} on ${formatDate(from)}, until ${formatDate(newCheckOut)} — ${paid}.`,
+  };
+}
+
 // --- rooms ------------------------------------------------------------------------
 
 const lines = (s: string) => s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
@@ -264,10 +310,14 @@ export async function setRoomActive(id: string, active: boolean): Promise<OpResu
 
 // --- import ------------------------------------------------------------------------
 
-/** Minimal CSV: commas, "quoted, fields" and "" escapes. */
+/**
+ * Minimal CSV: commas, "quoted, fields" and "" escapes. A line with a tab in it (rows pasted
+ * from Excel / Google Sheets) splits on tabs instead, so "1,800" stays one cell.
+ */
 export function parseCsv(textIn: string): string[][] {
   const rows: string[][] = [];
   for (const line of textIn.replace(/\r/g, "").split("\n")) {
+    const sep = line.includes("\t") ? "\t" : ",";
     const cells: string[] = [];
     let cur = "";
     let quoted = false;
@@ -280,7 +330,7 @@ export function parseCsv(textIn: string): string[][] {
         } else if (ch === '"') quoted = false;
         else cur += ch;
       } else if (ch === '"') quoted = true;
-      else if (ch === ",") {
+      else if (ch === sep) {
         cells.push(cur.trim());
         cur = "";
       } else cur += ch;
@@ -295,7 +345,7 @@ export function parseCsv(textIn: string): string[][] {
  * A date with its year written out, in any common form: 2026-10-12, 2026/10/12, 12/10/2026,
  * 12-10-2026, 12 Oct 2026, 12-Oct-2026. The year read must be the one in the cell.
  */
-function importDate(v: string): string | null {
+export function importDate(v: string): string | null {
   const year = /\b(\d{4})\b/.exec(v)?.[1];
   if (!year) return null;
   const s = v
@@ -319,7 +369,8 @@ export async function importBookings(csv: string): Promise<ImportResult> {
     const line = i + 1;
     const r = rows[i]!;
     if (r.every((c) => !c)) continue;
-    if (i === 0 && /^room$/i.test(r[0] ?? "")) continue; // header
+    // A header row: whatever its wording, it has no digits where the phone and check-in go.
+    if (i === 0 && !/\d/.test(`${r[2] ?? ""}${r[3] ?? ""}`)) continue;
     const [roomId = "", name = "", phoneRaw = "", inRaw = "", outRaw = "", guestsRaw = "1", paidRaw = "0"] = r;
     const checkIn = importDate(inRaw);
     const checkOut = importDate(outRaw);
